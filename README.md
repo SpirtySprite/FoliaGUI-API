@@ -47,22 +47,36 @@ Every operation that touches an inventory (open, close, update, title change, an
 - Java 21 or newer
 - Folia or Paper, version 1.21.x
 
+---
+
 ## Installation
 
-Build and install the library to your local Maven repository:
-
-```bash
-mvn install
-```
-
-Then add it as a dependency:
+**1. Depend on the core library:**
 
 ```xml
-<dependency>
-    <groupId>com.foliagui</groupId>
-    <artifactId>foliagui-api</artifactId>
-    <version>1.0.0</version>
-</dependency>
+	<repositories>
+		<repository>
+		    <id>jitpack.io</id>
+		    <url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+
+	<dependency>
+	    <groupId>com.github.SpirtySprite</groupId>
+	    <artifactId>FoliaGUI-API</artifactId>
+	    <version>1.0.0</version>
+	</dependency
+```
+
+**2. Mark your plugin Folia-ready** — required or it won't load on Folia:
+
+```yaml
+name: YourPlugin
+main: com.yourplugin.YourPlugin
+version: 1.0.0
+api-version: '1.20'
+folia-supported: true
+softdepend: [PlaceholderAPI]   # optional; enables the placeholder bridge
 ```
 
 This library ships no `plugin.yml`, so it needs to end up on your plugin's classpath somehow. Two options:
