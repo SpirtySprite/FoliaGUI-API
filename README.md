@@ -76,7 +76,6 @@ main: com.yourplugin.YourPlugin
 version: 1.0.0
 api-version: '1.20'
 folia-supported: true
-softdepend: [PlaceholderAPI]   # optional; enables the placeholder bridge
 ```
 
 This library ships no `plugin.yml`, so it needs to end up on your plugin's classpath somehow. Two options:
