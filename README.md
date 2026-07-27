@@ -23,6 +23,7 @@ Every operation that touches an inventory (open, close, update, title change, an
   - [Confirmation and alert dialogs](#confirmation-and-alert-dialogs)
   - [Loading content asynchronously](#loading-content-asynchronously)
   - [Anvil text input](#anvil-text-input)
+  - [Sign text input](#sign-text-input)
   - [Chat text input](#chat-text-input)
   - [Merchant trade window](#merchant-trade-window)
   - [Navigation and themes](#navigation-and-themes)
@@ -374,6 +375,31 @@ AnvilGui.builder()
 
 Add `.forceOpen(true)` to the builder if the player must submit or explicitly cancel rather than dismiss the anvil with Escape; closing it any other way reopens it automatically, the same way [force-open dialogs](#force-open-dialogs) work for regular menus.
 
+### Sign text input
+
+`SignGui` is the same idea as `AnvilGui` — a 4-line text prompt — but built on Paper's virtual sign packets (`Player#openVirtualSign`) instead of a fake anvil inventory. Set all 4 lines at once with `.lines(...)`, or just one with `.line(lineNumber, text)` (1-4) without touching the others:
+
+```java
+SignGui.builder()
+        .line(1, "&8Type your pet's name below")
+        .onComplete((player, lines) -> {
+            String name = lines.get(1);
+            if (name.isBlank()) {
+                player.sendMessage("&cYou didn't type anything.");
+                return;
+            }
+            player.sendMessage("Named: " + name);
+        })
+        .open(player);
+```
+
+A few things behave differently here than with `AnvilGui`, because a sign isn't an inventory:
+
+- **A sign block is genuinely rendered**, faked client-side only for that one player via `sendBlockChange`, at a `Location` you can override with `.position(...)`. By default it's placed 3 blocks beneath the player's feet so solid ground blocks it from view; standing over an open cave, glass floor, or in the air will expose it. Nothing is placed in the real world, no other player ever sees it, and the original block is restored once the dialog ends.
+- **Lines that come back unchanged are blanked out.** Whatever you passed to `.lines(...)` is compared against what the player submitted; a line the player left untouched comes back as `""` in the callback instead of your placeholder text, so `onComplete` only reflects what was actually typed or changed.
+- **There's no reliable "player pressed Escape" signal** the way `AnvilGui` gets one from `InventoryCloseEvent`, so there's no `onClose` or `forceOpen` here. Instead, `.timeout(ticks)` (default 60 seconds, `0` disables it) auto-reverts the fake sign and drops the session if the player never submits, so it doesn't linger client-side forever.
+- **Built on `@ApiStatus.Experimental` Paper API** (`UncheckedSignChangeEvent`), which may change between Paper releases.
+
 ### Chat text input
 
 For text longer than an anvil's rename field comfortably shows, `ChatPrompt` closes whatever GUI the player has open, listens for their next chat line, and hands it to a callback:
@@ -620,8 +646,8 @@ GuiManager.refresh(someGui);                       // rebuild it for its current
 GuiManager.closeAll();                             // everything, e.g. on plugin disable
 GuiManager.closeAll(gui -> gui instanceof ShopGui); // just one kind of menu
 
-// true if the player has a Gui, an AnvilGui, a MerchantGui, or a ChatPrompt open, any of which
-// would make it a bad time to also open a menu of your own
+// true if the player has a Gui, an AnvilGui, a SignGui, a MerchantGui, or a ChatPrompt open, any
+// of which would make it a bad time to also open a menu of your own
 boolean busy = GuiManager.hasAnyScreenOpen(player);
 ```
 
@@ -693,7 +719,7 @@ FoliaGUIService service = Bukkit.getServicesManager().load(FoliaGUIService.class
 | Package | Contents |
 |---|---|
 | `com.foliagui` | `FoliaGUI` entry point, `FoliaGUIService`, `FoliaGUINotInitialisedException` |
-| `com.foliagui.gui` | `BaseGui`, `Gui`, `PaginatedGui`, `SearchablePaginatedGui`, `ScrollingGui`, `StorageGui`, `AnvilGui`, `MerchantGui`, `ChatPrompt`, `Confirmation`, `Alert`, `AsyncContent`, `GuiManager`, `GuiNavigator`, `GuiTheme`, `CycleItem`, `GuiType`, `ScrollType`, `InteractionModifier`, `GuiFiller` |
+| `com.foliagui.gui` | `BaseGui`, `Gui`, `PaginatedGui`, `SearchablePaginatedGui`, `ScrollingGui`, `StorageGui`, `AnvilGui`, `SignGui`, `MerchantGui`, `ChatPrompt`, `Confirmation`, `Alert`, `AsyncContent`, `GuiManager`, `GuiNavigator`, `GuiTheme`, `CycleItem`, `GuiType`, `ScrollType`, `InteractionModifier`, `GuiFiller` |
 | `com.foliagui.item` | `GuiItem`, `GuiAction` |
 | `com.foliagui.event` | `GuiOpenEvent`, `GuiClickEvent`, `GuiCloseEvent` |
 | `com.foliagui.builder.item` | `ItemBuilder`, `SkullBuilder`, `PotionBuilder`, `BannerBuilder`, `FireworkBuilder`, `BookBuilder`, `BaseItemBuilder` |

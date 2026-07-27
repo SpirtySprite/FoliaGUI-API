@@ -44,8 +44,8 @@ public final class GuiManager {
 
     /** Unlike {@link #hasGuiOpen}, also covers a pending {@link AnvilGui}, {@link MerchantGui}, or {@link ChatPrompt}. */
     public static boolean hasAnyScreenOpen(@NotNull HumanEntity player) {
-        return hasGuiOpen(player) || AnvilGui.hasSession(player) || MerchantGui.hasSession(player)
-                || ChatPrompt.hasSession(player);
+        return hasGuiOpen(player) || AnvilGui.hasSession(player) || SignGui.hasSession(player)
+                || MerchantGui.hasSession(player) || ChatPrompt.hasSession(player);
     }
 
     public static int openCount() {

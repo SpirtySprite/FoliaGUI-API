@@ -7,8 +7,10 @@ import com.foliagui.gui.GuiManager;
 import com.foliagui.gui.GuiNavigator;
 import com.foliagui.gui.InteractionModifier;
 import com.foliagui.gui.MerchantGui;
+import com.foliagui.gui.SignGui;
 import com.foliagui.item.GuiAction;
 import com.foliagui.item.GuiItem;
+import io.papermc.paper.event.packet.UncheckedSignChangeEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -135,10 +137,16 @@ public final class GuiListener implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
+    public void onSignChange(UncheckedSignChangeEvent event) {
+        SignGui.handleSignChange(event);
+    }
+
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         GuiManager.unregister(event.getPlayer());
         GuiNavigator.clear(event.getPlayer());
+        SignGui.handleQuit(event.getPlayer());
     }
 
     /** Logs instead of propagating, so one broken handler doesn't stop the rest of the callback chain. */

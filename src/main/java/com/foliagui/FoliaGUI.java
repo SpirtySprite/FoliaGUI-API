@@ -5,6 +5,7 @@ import com.foliagui.gui.ChatPrompt;
 import com.foliagui.gui.GuiManager;
 import com.foliagui.gui.GuiNavigator;
 import com.foliagui.gui.MerchantGui;
+import com.foliagui.gui.SignGui;
 import com.foliagui.listener.GuiListener;
 import com.foliagui.scheduler.PaperFoliaScheduler;
 import com.foliagui.scheduler.Scheduler;
@@ -82,6 +83,7 @@ public final class FoliaGUI {
         GuiManager.closeAll();
         GuiManager.clearAll();
         AnvilGui.clearSessions();
+        SignGui.clearSessions();
         MerchantGui.clearSessions();
         GuiNavigator.clearAll();
         ChatPrompt.clearAll();
