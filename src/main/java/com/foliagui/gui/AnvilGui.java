@@ -67,6 +67,7 @@ public final class AnvilGui {
                 top.setItem(1, rightItem);
             }
             SESSIONS.put(player, this);
+            player.openInventory(view);
         }, null);
     }
 
