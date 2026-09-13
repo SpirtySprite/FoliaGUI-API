@@ -95,6 +95,24 @@ public final class GuiItem {
         this.itemStack = identity == null ? replacement : stamp(replacement, identity);
     }
 
+    public @NotNull GuiItem withItemStack(@NotNull ItemStack itemStack) {
+        GuiItem copy = new GuiItem(itemStack, action);
+        copy.clickSound = clickSound;
+        copy.clickVolume = clickVolume;
+        copy.clickPitch = clickPitch;
+        copy.cooldownMillis = cooldownMillis;
+        copy.lastClickMillis.set(lastClickMillis.get());
+        copy.editable = editable;
+        copy.leftClickAction = leftClickAction;
+        copy.rightClickAction = rightClickAction;
+        copy.shiftClickAction = shiftClickAction;
+        copy.numberKeyAction = numberKeyAction;
+        copy.cooldownBlockedAction = cooldownBlockedAction;
+        copy.requiredPermission = requiredPermission;
+        copy.permissionDeniedHandler = permissionDeniedHandler;
+        return copy;
+    }
+
     /** If any per-click-type handler or {@link #requirePermission} is set, returns a dispatcher combining them. */
     public @Nullable GuiAction<InventoryClickEvent> getAction() {
         if (requiredPermission == null && leftClickAction == null && rightClickAction == null
