@@ -149,7 +149,14 @@ public final class SignGui {
 
     public static final class Builder {
         private List<Component> lines = defaultLines();
-        private Function<Player, Location> position = player -> player.getLocation().add(0, -3, 0);
+        private Function<Player, Location> position = player -> {
+            Location below = player.getLocation().add(0, -3, 0);
+            int floor = player.getWorld().getMinHeight();
+            if (below.getBlockY() < floor) {
+                below.setY(floor);
+            }
+            return below;
+        };
         private BiConsumer<Player, List<String>> onComplete = (player, text) -> {
         };
         private long timeoutTicks = 20L * 60;

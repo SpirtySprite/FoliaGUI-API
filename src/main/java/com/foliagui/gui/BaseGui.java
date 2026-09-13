@@ -191,8 +191,9 @@ public abstract class BaseGui implements InventoryHolder {
         if (existing == null) {
             return this;
         }
-        existing.setItemStack(itemStack);
-        applyToInventory(() -> applyItem(slot, existing));
+        GuiItem replacement = existing.withItemStack(itemStack);
+        guiItems.put(slot, replacement);
+        applyToInventory(() -> applyItem(slot, replacement));
         return this;
     }
 
@@ -323,7 +324,7 @@ public abstract class BaseGui implements InventoryHolder {
     private void applyToInventory(@NotNull Runnable mutation) {
         List<HumanEntity> viewers = inventory.getViewers();
         if (viewers.isEmpty()) {
-            FoliaGUI.scheduler().runGlobal(mutation);
+            mutation.run();
             return;
         }
         HumanEntity viewer = viewers.get(0);
