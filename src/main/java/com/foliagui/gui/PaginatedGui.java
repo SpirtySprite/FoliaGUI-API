@@ -14,17 +14,22 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntFunction;
 
 /** Static items placed with {@code setItem} stay put on every page; {@link #addPageItem} items are paged automatically. */
 public class PaginatedGui extends BaseGui {
 
     private final List<GuiItem> pageItems = Collections.synchronizedList(new ArrayList<>());
     private final Map<Integer, GuiItem> currentPage = new ConcurrentHashMap<>();
+    private final Map<Integer, GuiItem> suppliedItems = new ConcurrentHashMap<>();
     private volatile List<Integer> cachedPageSlots;
     private final AtomicInteger pageNum = new AtomicInteger(); // 0-indexed
     private volatile int pageSize;     // 0 => auto (use all empty slots)
+    private volatile int suppliedItemCount;
+    private volatile IntFunction<GuiItem> pageItemSupplier;
 
     public PaginatedGui(int rows, @NotNull Component title, int pageSize) {
         super(rows, title);
@@ -60,11 +65,27 @@ public class PaginatedGui extends BaseGui {
     /** Static items are unaffected. */
     public @NotNull PaginatedGui clearPageItems() {
         pageItems.clear();
+        suppliedItems.clear();
+        suppliedItemCount = 0;
+        pageItemSupplier = null;
         return this;
     }
 
     public @NotNull List<GuiItem> getPageItems() {
         return pageItems;
+    }
+
+    public int getPageItemsCount() {
+        return pageItemSupplier == null ? pageItems.size() : suppliedItemCount;
+    }
+
+    public @NotNull PaginatedGui setPageItemSupplier(int itemCount, @NotNull IntFunction<GuiItem> supplier) {
+        pageItems.clear();
+        suppliedItems.clear();
+        suppliedItemCount = Math.max(0, itemCount);
+        pageItemSupplier = Objects.requireNonNull(supplier, "supplier cannot be null");
+        pageNum.set(0);
+        return this;
     }
 
     /** {@code 0} means "use every empty slot". */
@@ -83,7 +104,7 @@ public class PaginatedGui extends BaseGui {
         if (perPage <= 0) {
             return 1;
         }
-        return Math.max(1, (int) Math.ceil(pageItems.size() / (double) perPage));
+        return Math.max(1, (int) Math.ceil(getPageItemsCount() / (double) perPage));
     }
 
     public boolean hasNext() {
@@ -165,8 +186,8 @@ public class PaginatedGui extends BaseGui {
         for (int i = 0; i < slots.size(); i++) {
             int slot = slots.get(i);
             int itemIndex = start + i;
-            GuiItem item = (perPage > 0 && i < perPage && itemIndex < pageItems.size())
-                    ? pageItems.get(itemIndex) : null;
+            GuiItem item = perPage > 0 && i < perPage && itemIndex < getPageItemsCount()
+                    ? pageItem(itemIndex) : null;
             if (item != null) {
                 currentPage.put(slot, item);
             } else {
@@ -205,5 +226,13 @@ public class PaginatedGui extends BaseGui {
 
     private int perPage() {
         return pageSize > 0 ? pageSize : pageSlots().size();
+    }
+
+    private @Nullable GuiItem pageItem(int index) {
+        IntFunction<GuiItem> supplier = pageItemSupplier;
+        if (supplier == null) {
+            return pageItems.get(index);
+        }
+        return suppliedItems.computeIfAbsent(index, supplier::apply);
     }
 }
