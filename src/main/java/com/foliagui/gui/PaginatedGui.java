@@ -149,8 +149,16 @@ public class PaginatedGui extends BaseGui {
 
     @Override
     protected void populateInventory() {
-        super.populateInventory();
         List<Integer> slots = pageSlots();
+        boolean[] pagedSlots = new boolean[getSize()];
+        for (int slot : slots) {
+            pagedSlots[slot] = true;
+        }
+        for (int slot = 0; slot < getSize(); slot++) {
+            if (!pagedSlots[slot]) {
+                applyItem(slot, getGuiItem(slot));
+            }
+        }
         int perPage = pageSize > 0 ? Math.min(pageSize, slots.size()) : slots.size();
         int start = pageNum.get() * perPage;
 
