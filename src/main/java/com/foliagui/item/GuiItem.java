@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 /** Stamps a stable {@link UUID} into its persistent data so a clicked {@link ItemStack} resolves back to it. */
 public final class GuiItem {
 
-    private final UUID uuid = UUID.randomUUID();
+    private volatile UUID uuid;
     private ItemStack itemStack;
     private GuiAction<InventoryClickEvent> action;
     private org.bukkit.Sound clickSound;
@@ -40,7 +40,7 @@ public final class GuiItem {
     /** Clones {@code itemStack} so external mutation can't corrupt the GUI. */
     public GuiItem(@NotNull ItemStack itemStack, @Nullable GuiAction<InventoryClickEvent> action) {
         this.action = action;
-        this.itemStack = stamp(itemStack.clone());
+        this.itemStack = itemStack.clone();
     }
 
     public GuiItem(@NotNull ItemStack itemStack) {
@@ -49,7 +49,7 @@ public final class GuiItem {
 
     private GuiItem(@NotNull ItemStack itemStack, @Nullable GuiAction<InventoryClickEvent> action, boolean skipClone) {
         this.action = action;
-        this.itemStack = stamp(skipClone ? itemStack : itemStack.clone());
+        this.itemStack = skipClone ? itemStack : itemStack.clone();
     }
 
     /** Skips the defensive clone; only for a stack the caller guarantees isn't referenced elsewhere. */
@@ -61,17 +61,27 @@ public final class GuiItem {
         this(new ItemStack(material), null);
     }
 
-    private ItemStack stamp(@NotNull ItemStack stack) {
+    private ItemStack stamp(@NotNull ItemStack stack, @NotNull UUID identity) {
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
-            meta.getPersistentDataContainer().set(FoliaGUI.itemKey(), PersistentDataType.STRING, uuid.toString());
+            meta.getPersistentDataContainer().set(FoliaGUI.itemKey(), PersistentDataType.STRING, identity.toString());
             stack.setItemMeta(meta);
         }
         return stack;
     }
 
     public @NotNull UUID getUuid() {
-        return uuid;
+        UUID identity = uuid;
+        if (identity != null) {
+            return identity;
+        }
+        synchronized (this) {
+            if (uuid == null) {
+                uuid = UUID.randomUUID();
+                itemStack = stamp(itemStack, uuid);
+            }
+            return uuid;
+        }
     }
 
     /** Live reference; prefer {@link #setItemStack(ItemStack)} to replace it. */
@@ -80,7 +90,9 @@ public final class GuiItem {
     }
 
     public void setItemStack(@NotNull ItemStack itemStack) {
-        this.itemStack = stamp(itemStack.clone());
+        ItemStack replacement = itemStack.clone();
+        UUID identity = uuid;
+        this.itemStack = identity == null ? replacement : stamp(replacement, identity);
     }
 
     /** If any per-click-type handler or {@link #requirePermission} is set, returns a dispatcher combining them. */
@@ -234,17 +246,17 @@ public final class GuiItem {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof GuiItem other && other.uuid.equals(uuid);
+        return this == o;
     }
 
     @Override
     public int hashCode() {
-        return uuid.hashCode();
+        return System.identityHashCode(this);
     }
 
     @Override
     public String toString() {
         Component name = itemStack.getItemMeta() != null ? itemStack.getItemMeta().displayName() : null;
-        return "GuiItem{uuid=" + uuid + ", type=" + itemStack.getType() + ", name=" + name + '}';
+        return "GuiItem{uuid=" + getUuid() + ", type=" + itemStack.getType() + ", name=" + name + '}';
     }
 }

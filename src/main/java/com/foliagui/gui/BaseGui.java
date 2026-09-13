@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -43,6 +44,8 @@ public abstract class BaseGui implements InventoryHolder {
 
     private volatile Inventory inventory;
     private final Map<Integer, GuiItem> guiItems = new ConcurrentHashMap<>();
+    private final GuiItem[] renderedItems;
+    private final ItemStack[] renderedStacks;
     private final Map<Integer, GuiAction<InventoryClickEvent>> slotActions = new ConcurrentHashMap<>();
     private final Set<InteractionModifier> interactionModifiers =
             Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -75,6 +78,8 @@ public abstract class BaseGui implements InventoryHolder {
         this.size = this.rows * Slot.ROW_WIDTH;
         this.title = title;
         this.inventory = Bukkit.createInventory(this, size, title);
+        this.renderedItems = new GuiItem[size];
+        this.renderedStacks = new ItemStack[size];
     }
 
     protected BaseGui(@NotNull GuiType guiType, @NotNull Component title) {
@@ -83,18 +88,26 @@ public abstract class BaseGui implements InventoryHolder {
         this.size = guiType.getSize();
         this.title = title;
         this.inventory = Bukkit.createInventory(this, guiType.getInventoryType(), title);
+        this.renderedItems = new GuiItem[size];
+        this.renderedStacks = new ItemStack[size];
     }
 
     protected void populateInventory() {
         Inventory target = getInventory();
         int slotCount = target.getSize();
         for (int slot = 0; slot < slotCount; slot++) {
-            GuiItem item = guiItems.get(slot);
-            ItemStack desired = item != null ? item.getItemStack().clone() : null;
-            if (!Objects.equals(target.getItem(slot), desired)) {
-                target.setItem(slot, desired);
-            }
+            applyItem(slot, guiItems.get(slot));
         }
+    }
+
+    protected final void applyItem(int slot, @Nullable GuiItem item) {
+        ItemStack stack = item == null ? null : item.getItemStack();
+        if (renderedItems[slot] == item && renderedStacks[slot] == stack) {
+            return;
+        }
+        getInventory().setItem(slot, stack == null ? null : stack.clone());
+        renderedItems[slot] = item;
+        renderedStacks[slot] = stack;
     }
 
     /** 0-indexed flat slot. */
@@ -179,7 +192,7 @@ public abstract class BaseGui implements InventoryHolder {
             return this;
         }
         existing.setItemStack(itemStack);
-        applyToInventory(() -> getInventory().setItem(slot, existing.getItemStack().clone()));
+        applyToInventory(() -> applyItem(slot, existing));
         return this;
     }
 
@@ -187,7 +200,7 @@ public abstract class BaseGui implements InventoryHolder {
         Objects.requireNonNull(guiItem, "guiItem cannot be null");
         validateSlot(slot);
         guiItems.put(slot, guiItem);
-        applyToInventory(() -> getInventory().setItem(slot, guiItem.getItemStack().clone()));
+        applyToInventory(() -> applyItem(slot, guiItem));
         return this;
     }
 
@@ -286,6 +299,8 @@ public abstract class BaseGui implements InventoryHolder {
                     ? Bukkit.createInventory(this, size, title)
                     : Bukkit.createInventory(this, guiType.getInventoryType(), title);
             this.inventory = replacement;
+            Arrays.fill(renderedItems, null);
+            Arrays.fill(renderedStacks, null);
             populateInventory();
             // bracket with updating flag so the synchronous close/open events skip user callbacks
             for (HumanEntity viewer : viewers) {
