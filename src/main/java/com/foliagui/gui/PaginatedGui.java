@@ -6,23 +6,21 @@ import com.foliagui.util.Text;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** Static items placed with {@code setItem} stay put on every page; {@link #addPageItem} items are paged automatically. */
 public class PaginatedGui extends BaseGui {
 
-    private final List<GuiItem> pageItems = new CopyOnWriteArrayList<>();
+    private final List<GuiItem> pageItems = Collections.synchronizedList(new ArrayList<>());
     private final Map<Integer, GuiItem> currentPage = new ConcurrentHashMap<>();
     private volatile List<Integer> cachedPageSlots;
     private final AtomicInteger pageNum = new AtomicInteger(); // 0-indexed
@@ -166,10 +164,7 @@ public class PaginatedGui extends BaseGui {
             } else {
                 currentPage.remove(slot);
             }
-            ItemStack desired = item != null ? item.getItemStack().clone() : null;
-            if (!Objects.equals(getInventory().getItem(slot), desired)) {
-                getInventory().setItem(slot, desired);
-            }
+            applyItem(slot, item);
         }
     }
 

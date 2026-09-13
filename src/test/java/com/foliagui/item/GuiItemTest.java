@@ -35,6 +35,20 @@ class GuiItemTest {
     }
 
     @Test
+    void defersItsUuidUntilIdentityIsRequested() {
+        GuiItem item = new GuiItem(Material.STONE);
+        assertNull(GuiItem.uuidOf(item.getItemStack()));
+    }
+
+    @Test
+    void preservesRequestedIdentityWhenItsStackChanges() {
+        GuiItem item = new GuiItem(Material.STONE);
+        java.util.UUID identity = item.getUuid();
+        item.setItemStack(new ItemStack(Material.DIAMOND));
+        assertEquals(identity, GuiItem.uuidOf(item.getItemStack()));
+    }
+
+    @Test
     void uuidOfReturnsNullForAnUnstampedStack() {
         assertNull(GuiItem.uuidOf(new ItemStack(Material.STONE)));
     }
