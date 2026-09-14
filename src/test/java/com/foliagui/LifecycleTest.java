@@ -59,6 +59,21 @@ class LifecycleTest {
         assertFalse(FoliaGUI.isInitialised());
     }
 
+    @Test
+    void shutdownAfterThePluginIsDisabledClosesMenusWithoutScheduling() {
+        ServerMock server = MockBukkit.mock();
+        Plugin plugin = MockBukkit.createMockPlugin("PluginA");
+        FoliaGUI.init(plugin);
+        org.mockbukkit.mockbukkit.entity.PlayerMock player = server.addPlayer();
+        com.foliagui.gui.Gui gui = com.foliagui.gui.Gui.builder().rows(1)
+                .title(net.kyori.adventure.text.Component.text("x")).create();
+        gui.open(player);
+        server.getScheduler().performTicks(2);
+        server.getPluginManager().disablePlugin(plugin);
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(FoliaGUI::shutdown);
+        assertFalse(FoliaGUI.isInitialised());
+    }
+
     private static void assertEqualsPlugin(Plugin expected) {
         assertTrue(FoliaGUI.isInitialised());
         org.junit.jupiter.api.Assertions.assertEquals(expected, FoliaGUI.plugin());
