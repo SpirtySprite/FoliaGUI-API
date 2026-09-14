@@ -10,12 +10,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Fired for every click inside a FoliaGUI {@link BaseGui}, wrapping the underlying {@link InventoryClickEvent}
- * with the resolved {@link GuiItem} and owning GUI. Starts with whatever cancellation state the interaction
- * modifiers already decided; cancelling here is copied back onto the underlying event but doesn't stop
- * FoliaGUI's own slot/item actions from running, only the resulting item-movement.
- */
 public class GuiClickEvent extends Event implements Cancellable {
 
     private static final HandlerList HANDLERS = new HandlerList();
@@ -47,12 +41,10 @@ public class GuiClickEvent extends Event implements Cancellable {
         return inventoryClickEvent;
     }
 
-    /** Null if the clicked slot is empty. */
     public @Nullable GuiItem getClickedItem() {
         return clickedItem;
     }
 
-    /** 0-indexed. */
     public int getSlot() {
         return inventoryClickEvent.getSlot();
     }

@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Own test class (own JVM fork) so it can freely init/shutdown FoliaGUI without disturbing other tests. */
 class LifecycleTest {
 
     @AfterEach
@@ -50,7 +49,7 @@ class LifecycleTest {
         assertEqualsPlugin(plugin);
 
         FoliaGUI.shutdown();
-        assertNotNull(org.bukkit.Bukkit.getServicesManager()); // manager itself always exists
+        assertNotNull(org.bukkit.Bukkit.getServicesManager());
     }
 
     @Test

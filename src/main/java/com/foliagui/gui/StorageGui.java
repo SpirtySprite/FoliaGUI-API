@@ -10,11 +10,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Lets players freely move items in and out. All interaction modifiers are cleared by default, so unlike
- * a {@link Gui} it does not lock its slots. Persist {@link #getStorageContents()} yourself if it needs to
- * survive a restart.
- */
 public class StorageGui extends BaseGui {
 
     public StorageGui(int rows, @NotNull Component title) {
@@ -26,7 +21,6 @@ public class StorageGui extends BaseGui {
         return new StorageGuiBuilder();
     }
 
-    /** Contents of every slot that is not a fixed GUI item; indexes match inventory slots. */
     public @NotNull ItemStack[] getStorageContents() {
         ItemStack[] raw = getInventory().getContents();
         ItemStack[] storage = new ItemStack[raw.length];
@@ -48,7 +42,6 @@ public class StorageGui extends BaseGui {
         return items;
     }
 
-    /** Places raw storage items directly into the inventory (bypassing the GUI item map). */
     public @NotNull StorageGui setStorageContents(@Nullable ItemStack @NotNull [] contents) {
         for (int slot = 0; slot < contents.length && slot < getSize(); slot++) {
             if (getGuiItem(slot) == null) {

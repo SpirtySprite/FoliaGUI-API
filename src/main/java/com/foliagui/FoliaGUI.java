@@ -23,11 +23,6 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Call {@link #init(Plugin)} in {@code onEnable} and {@link #shutdown()} in {@code onDisable}. One
- * instance per server process; relocate the package if multiple plugins shade this in, or unrelocated
- * copies fight over this singleton.
- */
 public final class FoliaGUI {
 
     public static final String VERSION = readVersion();
@@ -42,7 +37,6 @@ public final class FoliaGUI {
     private FoliaGUI() {
     }
 
-    /** No-op if already initialised. Call {@link #shutdown()} first to re-initialise. */
     public static synchronized void init(@NotNull Plugin owner) {
         if (owner == null) {
             throw new IllegalArgumentException("owner plugin cannot be null");
@@ -75,7 +69,6 @@ public final class FoliaGUI {
         initialised = true;
     }
 
-    /** Safe to call even if never initialised; {@link #init(Plugin)} can be called again after. */
     public static synchronized void shutdown() {
         if (!initialised) {
             return;
@@ -105,19 +98,16 @@ public final class FoliaGUI {
         return initialised;
     }
 
-    /** @throws IllegalStateException if not initialised */
     public static @NotNull Plugin plugin() {
         ensureReady();
         return plugin;
     }
 
-    /** @throws IllegalStateException if not initialised */
     public static @NotNull Scheduler scheduler() {
         ensureReady();
         return scheduler;
     }
 
-    /** @throws IllegalStateException if not initialised */
     public static @NotNull NamespacedKey itemKey() {
         ensureReady();
         return itemKey;

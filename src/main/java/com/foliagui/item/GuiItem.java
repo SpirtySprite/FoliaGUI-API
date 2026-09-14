@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-/** Stamps a stable {@link UUID} into its persistent data so a clicked {@link ItemStack} resolves back to it. */
 public final class GuiItem {
 
     private volatile UUID uuid;
@@ -37,7 +36,6 @@ public final class GuiItem {
     private Consumer<Player> permissionDeniedHandler = player -> {
     };
 
-    /** Clones {@code itemStack} so external mutation can't corrupt the GUI. */
     public GuiItem(@NotNull ItemStack itemStack, @Nullable GuiAction<InventoryClickEvent> action) {
         this.action = action;
         this.itemStack = itemStack.clone();
@@ -52,7 +50,6 @@ public final class GuiItem {
         this.itemStack = skipClone ? itemStack : itemStack.clone();
     }
 
-    /** Skips the defensive clone; only for a stack the caller guarantees isn't referenced elsewhere. */
     public static @NotNull GuiItem trusted(@NotNull ItemStack isolatedStack, @Nullable GuiAction<InventoryClickEvent> action) {
         return new GuiItem(isolatedStack, action, true);
     }
@@ -84,7 +81,6 @@ public final class GuiItem {
         }
     }
 
-    /** Live reference; prefer {@link #setItemStack(ItemStack)} to replace it. */
     public @NotNull ItemStack getItemStack() {
         return itemStack;
     }
@@ -113,7 +109,6 @@ public final class GuiItem {
         return copy;
     }
 
-    /** If any per-click-type handler or {@link #requirePermission} is set, returns a dispatcher combining them. */
     public @Nullable GuiAction<InventoryClickEvent> getAction() {
         if (requiredPermission == null && leftClickAction == null && rightClickAction == null
                 && shiftClickAction == null && numberKeyAction == null) {
@@ -160,13 +155,11 @@ public final class GuiItem {
         return this;
     }
 
-    /** Fires when the player presses a hotbar number key while hovering this item, swapping it into that slot. */
     public @NotNull GuiItem onNumberKey(@NotNull GuiAction<InventoryClickEvent> action) {
         this.numberKeyAction = action;
         return this;
     }
 
-    /** Fires instead of the normal action(s) when a click lands inside {@link #cooldown(long)}'s window. */
     public @NotNull GuiItem onCooldownBlocked(@NotNull GuiAction<InventoryClickEvent> action) {
         this.cooldownBlockedAction = action;
         return this;
@@ -177,7 +170,6 @@ public final class GuiItem {
         return cooldownBlockedAction;
     }
 
-    /** Clicks from a player lacking {@code permission} run {@code onDenied} instead of this item's action(s). */
     public @NotNull GuiItem requirePermission(@NotNull String permission, @NotNull Consumer<Player> onDenied) {
         this.requiredPermission = permission;
         this.permissionDeniedHandler = onDenied;
@@ -207,13 +199,11 @@ public final class GuiItem {
         return clickPitch;
     }
 
-    /** Minimum delay between successful clicks. Clicks inside the window are silently dropped, sound included. {@code 0} disables it. */
     public @NotNull GuiItem cooldown(long ticks) {
         this.cooldownMillis = Math.max(0, ticks) * 50L;
         return this;
     }
 
-    /** In ticks, 0 if disabled. */
     public long getCooldownTicks() {
         return cooldownMillis / 50L;
     }
@@ -232,7 +222,6 @@ public final class GuiItem {
         return true;
     }
 
-    /** Opts out of the automatic take/swap/drop/drag protection every GuiItem otherwise gets. Defaults to {@code false}. */
     public @NotNull GuiItem editable(boolean editable) {
         this.editable = editable;
         return this;
@@ -242,7 +231,6 @@ public final class GuiItem {
         return editable;
     }
 
-    /** Null if {@code stack} isn't a stamped GUI item. */
     public static @Nullable UUID uuidOf(@Nullable ItemStack stack) {
         if (stack == null) {
             return null;

@@ -7,10 +7,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-/**
- * If the player closes the GUI before the fetch completes, {@code onLoaded} still runs. Check
- * {@link BaseGui#isOpenFor} yourself if populating is expensive.
- */
 public final class AsyncContent {
 
     private AsyncContent() {

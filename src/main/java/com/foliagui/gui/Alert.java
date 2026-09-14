@@ -8,7 +8,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
 
-/** Single-button "OK" popup; an acknowledgement rather than {@link Confirmation}'s yes/no choice. */
 public final class Alert {
 
     private Alert() {
@@ -25,13 +24,11 @@ public final class Alert {
         private Consumer<Player> onAcknowledge = player -> {
         };
 
-        /** Legacy color codes. */
         public @NotNull Builder title(@NotNull String title) {
             this.title = title;
             return this;
         }
 
-        /** Click action gets overwritten by the dialog. */
         public @NotNull Builder okItem(@NotNull GuiItem item) {
             this.okItem = item;
             return this;

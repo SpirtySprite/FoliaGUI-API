@@ -17,10 +17,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
 
-/**
- * Captures a player's next chat message instead of showing a GUI. Closes any open GUI, cancels the chat
- * line, and delivers the text to the callback on the player's region thread.
- */
 public final class ChatPrompt {
 
     private static final SessionRegistry<ChatPrompt> PENDING = new SessionRegistry<>();
@@ -37,7 +33,6 @@ public final class ChatPrompt {
         return PENDING.has(player);
     }
 
-    /** {@code timeoutTicks} of {@code 0} waits indefinitely; otherwise callback runs once with {@code null} on timeout. */
     public static void ask(@NotNull Player player, @NotNull String prompt, long timeoutTicks,
                             @NotNull Consumer<String> callback) {
         ensureRegistered();
@@ -51,7 +46,6 @@ public final class ChatPrompt {
         player.sendMessage(Text.of(prompt));
 
         if (timeoutTicks > 0) {
-            // self-cancelling timer, needs to stay cancellable if the player answers first
             TaskHandle[] handle = new TaskHandle[1];
             handle[0] = FoliaGUI.scheduler().runForEntityTimer(player, () -> {
                 handle[0].cancel();
@@ -63,7 +57,6 @@ public final class ChatPrompt {
         }
     }
 
-    /** Does not invoke the callback. */
     public static void cancel(@NotNull Player player) {
         ChatPrompt session = PENDING.remove(player);
         if (session != null && session.timeoutTask != null) {
@@ -71,7 +64,6 @@ public final class ChatPrompt {
         }
     }
 
-    /** Unregisters the backing listener so {@link #ask} re-registers cleanly on the next {@code FoliaGUI.init}. */
     public static void clearAll() {
         for (ChatPrompt session : PENDING.values()) {
             if (session.timeoutTask != null) {
@@ -107,7 +99,6 @@ public final class ChatPrompt {
                 session.timeoutTask.cancel();
             }
             String text = PlainTextComponentSerializer.plainText().serialize(event.message());
-            // chat events fire off the region thread, hop back before calling back
             FoliaGUI.scheduler().runForEntity(player, () -> session.callback.accept(text), null);
         }
 

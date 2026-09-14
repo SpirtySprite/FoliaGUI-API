@@ -17,14 +17,12 @@ class TextTest {
 
     @Test
     void ofPreservesExplicitItalic() {
-        // Legacy colour codes reset prior formatting, so italic must come after the colour code to stick.
         Component italic = Text.of("&a&oHello");
         assertEquals(TextDecoration.State.TRUE, italic.decoration(TextDecoration.ITALIC));
     }
 
     @Test
     void labelDisablesTheImplicitItalicDefault() {
-        // Minecraft renders custom item names/lore in italic by default; label() turns that default off.
         Component label = Text.label("&aHello");
         assertEquals(TextDecoration.State.FALSE, label.decoration(TextDecoration.ITALIC));
     }

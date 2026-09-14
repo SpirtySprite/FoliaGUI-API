@@ -19,15 +19,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntFunction;
 
-/** Static items placed with {@code setItem} stay put on every page; {@link #addPageItem} items are paged automatically. */
 public class PaginatedGui extends BaseGui {
 
     private final List<GuiItem> pageItems = Collections.synchronizedList(new ArrayList<>());
     private final Map<Integer, GuiItem> currentPage = new ConcurrentHashMap<>();
     private final Map<Integer, GuiItem> suppliedItems = new ConcurrentHashMap<>();
     private volatile List<Integer> cachedPageSlots;
-    private final AtomicInteger pageNum = new AtomicInteger(); // 0-indexed
-    private volatile int pageSize;     // 0 => auto (use all empty slots)
+    private final AtomicInteger pageNum = new AtomicInteger();
+    private volatile int pageSize;
     private volatile int suppliedItemCount;
     private volatile IntFunction<GuiItem> pageItemSupplier;
 
@@ -62,7 +61,6 @@ public class PaginatedGui extends BaseGui {
         return this;
     }
 
-    /** Static items are unaffected. */
     public @NotNull PaginatedGui clearPageItems() {
         pageItems.clear();
         suppliedItems.clear();
@@ -88,13 +86,11 @@ public class PaginatedGui extends BaseGui {
         return this;
     }
 
-    /** {@code 0} means "use every empty slot". */
     public @NotNull PaginatedGui setPageSize(int pageSize) {
         this.pageSize = Math.max(0, pageSize);
         return this;
     }
 
-    /** 1-indexed. */
     public int getCurrentPage() {
         return pageNum.get() + 1;
     }
@@ -115,7 +111,6 @@ public class PaginatedGui extends BaseGui {
         return pageNum.get() > 0;
     }
 
-    /** Safe to call concurrently; if two callers race, at most one actually advances. */
     public boolean next() {
         int pageCount = getPagesCount();
         int previousValue = pageNum.getAndUpdate(current -> current + 1 < pageCount ? current + 1 : current);
@@ -126,7 +121,6 @@ public class PaginatedGui extends BaseGui {
         return advanced;
     }
 
-    /** Safe to call concurrently; if two callers race, at most one actually moves back. */
     public boolean previous() {
         int previousValue = pageNum.getAndUpdate(current -> current > 0 ? current - 1 : current);
         boolean moved = previousValue > 0;
@@ -136,7 +130,6 @@ public class PaginatedGui extends BaseGui {
         return moved;
     }
 
-    /** 1-indexed, clamped to the valid range. */
     public @NotNull PaginatedGui openPage(int page) {
         pageNum.set(Math.max(0, Math.min(page - 1, getPagesCount() - 1)));
         update();
@@ -147,13 +140,11 @@ public class PaginatedGui extends BaseGui {
         return openPage(getPagesCount());
     }
 
-    /** {@code page} is 1-indexed. */
     public void open(@NotNull HumanEntity player, int page) {
         pageNum.set(Math.max(0, Math.min(page - 1, getPagesCount() - 1)));
         open(player);
     }
 
-    /** Non-numeric input, or no answer within 20 seconds, leaves the current page unchanged. */
     public void promptJumpToPage(@NotNull Player player) {
         ChatPrompt.ask(player, "&eType a page number (1-" + getPagesCount() + "):", 20 * 20, input -> {
             if (input == null) {
@@ -208,7 +199,6 @@ public class PaginatedGui extends BaseGui {
         cachedPageSlots = null;
     }
 
-    /** Cached; only recomputed when the static item map changes, since page turns and auto-refresh would otherwise rescan every slot. */
     protected @NotNull List<Integer> pageSlots() {
         List<Integer> cached = cachedPageSlots;
         if (cached != null) {

@@ -26,7 +26,6 @@ public final class PotionBuilder extends BaseItemBuilder<PotionBuilder> {
         return this;
     }
 
-    /** Overwrites any existing effect of the same type. */
     public @NotNull PotionBuilder effect(@NotNull PotionEffect effect) {
         if (meta instanceof PotionMeta potion) {
             potion.addCustomEffect(effect, true);

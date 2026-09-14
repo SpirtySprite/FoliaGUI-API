@@ -17,11 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * A GUI whose content slides one row ({@link ScrollType#VERTICAL}) or column ({@link ScrollType#HORIZONTAL})
- * at a time through the non-static slots. The scroll region is inferred from whatever slots are left empty
- * after static items are placed, so a border or side rail shrinks the region.
- */
 public class ScrollingGui extends BaseGui {
 
     private final ScrollType scrollType;
@@ -29,7 +24,7 @@ public class ScrollingGui extends BaseGui {
     private final Map<Integer, GuiItem> currentView = new ConcurrentHashMap<>();
     private volatile int[] cachedRegionRows;
     private volatile int[] cachedRegionColumns;
-    private final AtomicInteger offset = new AtomicInteger(); // measured in lines (rows or columns)
+    private final AtomicInteger offset = new AtomicInteger();
 
     public ScrollingGui(int rows, @NotNull Component title, @NotNull ScrollType scrollType) {
         super(rows, title);
@@ -57,7 +52,6 @@ public class ScrollingGui extends BaseGui {
         return this;
     }
 
-    /** Static items are unaffected. */
     public @NotNull ScrollingGui clearContent() {
         content.clear();
         return this;
@@ -79,7 +73,6 @@ public class ScrollingGui extends BaseGui {
         return offset.get() > 0;
     }
 
-    /** Safe to call concurrently; if two callers race, at most one actually scrolls. */
     public boolean scrollNext() {
         int max = maxOffset();
         int previousValue = offset.getAndUpdate(current -> current < max ? current + 1 : current);
@@ -90,7 +83,6 @@ public class ScrollingGui extends BaseGui {
         return scrolled;
     }
 
-    /** Safe to call concurrently; if two callers race, at most one actually scrolls. */
     public boolean scrollPrevious() {
         int previousValue = offset.getAndUpdate(current -> current > 0 ? current - 1 : current);
         boolean scrolled = previousValue > 0;
@@ -167,7 +159,6 @@ public class ScrollingGui extends BaseGui {
         cachedRegionColumns = null;
     }
 
-    /** 1-indexed. Cached; only recomputed when the static item map changes. */
     private int[] regionRows() {
         int[] cached = cachedRegionRows;
         if (cached != null) {

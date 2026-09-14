@@ -16,7 +16,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
-/** Registry of every GUI currently open, maintained by the listener. Thread-safe. */
 public final class GuiManager {
 
     private static final Map<UUID, BaseGui> OPEN = new ConcurrentHashMap<>();
@@ -42,7 +41,6 @@ public final class GuiManager {
         return OPEN.containsKey(player.getUniqueId());
     }
 
-    /** Unlike {@link #hasGuiOpen}, also covers a pending {@link AnvilGui}, {@link MerchantGui}, or {@link ChatPrompt}. */
     public static boolean hasAnyScreenOpen(@NotNull HumanEntity player) {
         return hasGuiOpen(player) || AnvilGui.hasSession(player) || SignGui.hasSession(player)
                 || MerchantGui.hasSession(player) || ChatPrompt.hasSession(player);
@@ -56,7 +54,6 @@ public final class GuiManager {
         gui.update();
     }
 
-    /** Safe from any thread. Use in plugin {@code onDisable} so no player is left in a dead menu. */
     public static void closeAll() {
         for (UUID uuid : OPEN.keySet()) {
             Player player = Bukkit.getPlayer(uuid);
@@ -93,7 +90,6 @@ public final class GuiManager {
         return matches;
     }
 
-    /** Safe from any thread; useful for closing just one kind of menu (e.g. shops on a reload). */
     public static void closeAll(@NotNull Predicate<BaseGui> filter) {
         for (Map.Entry<UUID, BaseGui> entry : OPEN.entrySet()) {
             if (!filter.test(entry.getValue())) {
@@ -106,7 +102,6 @@ public final class GuiManager {
         }
     }
 
-    /** For {@link FoliaGUI#shutdown()}; call {@link #closeAll()} first to actually kick players out. */
     public static void clearAll() {
         OPEN.clear();
     }

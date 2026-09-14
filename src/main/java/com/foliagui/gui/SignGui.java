@@ -21,24 +21,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * Text-input dialog built on Paper's virtual sign packets ({@code Player#openVirtualSign}); opens on the
- * player's region thread.
- * <p>
- * Unlike {@link AnvilGui}, this briefly renders a fake sign block at a {@link Location} (by default the
- * block beneath the player's feet), visible only to the editing player via {@code sendBlockChange}.
- * Nothing is placed in the real world and no other player ever sees it, but the editor themself does see
- * a sign flash in for the duration of the dialog, that's inherent to how the client ties the sign-edit
- * screen to a block position.
- * <p>
- * There is no reliable "player pressed Escape" signal for signs the way {@link AnvilGui} gets one from
- * {@code InventoryCloseEvent}, so {@code onComplete} is the only callback. A {@code timeout} safety net
- * reverts the fake block and drops the session if the player never confirms, so it doesn't linger
- * client-side forever.
- * <p>
- * Built on {@code @ApiStatus.Experimental} Paper API ({@link UncheckedSignChangeEvent}), which may change
- * between Paper releases.
- */
 public final class SignGui {
 
     private static final Side SIDE = Side.FRONT;
@@ -85,7 +67,6 @@ public final class SignGui {
             player.openVirtualSign(pos, SIDE);
 
             if (timeoutTicks > 0) {
-                // self-cancelling timer, needs to stay cancellable if the player submits first
                 TaskHandle[] handle = new TaskHandle[1];
                 handle[0] = FoliaGUI.scheduler().runForEntityTimer(player, () -> {
                     handle[0].cancel();
@@ -131,7 +112,6 @@ public final class SignGui {
         }
     }
 
-    /** Used by {@code FoliaGUI.shutdown()}; skips the onComplete callback and any pending revert. */
     public static void clearSessions() {
         for (SignGui gui : SESSIONS.values()) {
             if (gui.timeoutTask != null) {
@@ -169,7 +149,6 @@ public final class SignGui {
             return lines;
         }
 
-        /** Legacy color codes, up to 4 lines; missing lines are left blank. */
         public @NotNull Builder lines(@NotNull String... lines) {
             List<Component> parsed = new ArrayList<>(4);
             for (int i = 0; i < 4; i++) {
@@ -179,7 +158,6 @@ public final class SignGui {
             return this;
         }
 
-        /** Sets a single line (1-4), legacy color codes, without touching the other 3. */
         public @NotNull Builder line(int lineNumber, @NotNull String text) {
             if (lineNumber < 1 || lineNumber > 4) {
                 throw new IllegalArgumentException("lineNumber must be 1-4, was " + lineNumber);
@@ -188,27 +166,16 @@ public final class SignGui {
             return this;
         }
 
-        /**
-         * Where the fake sign is placed, resolved fresh per {@link #open}. Defaults to 3 blocks beneath
-         * the player's feet so solid ground occludes it from view, standing on an open cave/glass floor
-         * will expose it. The client also enforces a distance limit, keep it reasonably close to the player.
-         */
         public @NotNull Builder position(@NotNull Function<Player, Location> position) {
             this.position = position;
             return this;
         }
 
-        /**
-         * Called with 4 lines once the player submits the sign. Lines that still match what
-         * {@link #lines} pre-filled (i.e. the player left them untouched) come back as {@code ""}
-         * rather than the placeholder text, so this only reflects what was actually typed/changed.
-         */
         public @NotNull Builder onComplete(@NotNull BiConsumer<Player, List<String>> onComplete) {
             this.onComplete = onComplete;
             return this;
         }
 
-        /** Ticks before the fake sign is auto-reverted if the player never submits. {@code 0} disables the safety net. */
         public @NotNull Builder timeout(long timeoutTicks) {
             this.timeoutTicks = timeoutTicks;
             return this;

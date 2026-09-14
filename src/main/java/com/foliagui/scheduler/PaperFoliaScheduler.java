@@ -8,11 +8,6 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * {@link Scheduler} implementation built on Paper's region-scheduler API. On Folia it dispatches to the
- * owning region's thread; on regular Paper the same API is a shim that runs everything on the main thread.
- * One implementation works correctly on both, so consumer code never branches on server flavour.
- */
 public final class PaperFoliaScheduler implements Scheduler {
 
     private final Plugin plugin;
@@ -70,7 +65,6 @@ public final class PaperFoliaScheduler implements Scheduler {
         return folia;
     }
 
-    /** Wraps a Folia/Paper {@link ScheduledTask} as the platform-neutral {@link TaskHandle}. */
     private record ScheduledTaskHandle(ScheduledTask task) implements TaskHandle {
         @Override
         public void cancel() {

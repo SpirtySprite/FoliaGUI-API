@@ -7,10 +7,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Fired when a FoliaGUI {@link BaseGui} is about to open for a player, mirroring the underlying (also
- * cancellable) {@code InventoryOpenEvent}. Cancelling this event cancels the open.
- */
 public class GuiOpenEvent extends Event implements Cancellable {
 
     private static final HandlerList HANDLERS = new HandlerList();

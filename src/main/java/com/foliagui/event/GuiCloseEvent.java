@@ -6,10 +6,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Fired when a player's FoliaGUI {@link BaseGui} closes. Not cancellable, matching vanilla
- * {@code InventoryCloseEvent}. See {@link BaseGui#setForceOpen} to keep a player in a dialog.
- */
 public class GuiCloseEvent extends Event {
 
     private static final HandlerList HANDLERS = new HandlerList();

@@ -6,10 +6,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
-/**
- * Only fills empty slots, so items placed first are left untouched. Row/column/border/corner methods
- * are no-ops on non-chest GUIs.
- */
 public final class GuiFiller {
 
     private final BaseGui gui;
@@ -82,7 +78,6 @@ public final class GuiFiller {
         return this;
     }
 
-    /** Inclusive flat-slot range {@code [from, to]}. */
     public @NotNull GuiFiller fillBetween(int from, int to, @NotNull GuiItem item) {
         int lo = Math.max(0, Math.min(from, to));
         int hi = Math.min(gui.getSize() - 1, Math.max(from, to));
@@ -92,7 +87,6 @@ public final class GuiFiller {
         return this;
     }
 
-    /** Each string is one row; each char is looked up in {@code key} and placed if mapped, else left empty. */
     public @NotNull GuiFiller pattern(@NotNull Map<Character, GuiItem> key, @NotNull String... rows) {
         for (int r = 0; r < rows.length && r < gui.getRows(); r++) {
             String line = rows[r];

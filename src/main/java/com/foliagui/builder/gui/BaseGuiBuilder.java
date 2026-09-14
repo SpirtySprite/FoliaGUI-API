@@ -15,7 +15,6 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
-/** Self-typed base for the GUI builders. Holds settings common to every GUI and applies them in {@link #create()}. */
 @SuppressWarnings("unchecked")
 public abstract class BaseGuiBuilder<G extends BaseGui, B extends BaseGuiBuilder<G, B>> {
 
@@ -42,13 +41,11 @@ public abstract class BaseGuiBuilder<G extends BaseGui, B extends BaseGuiBuilder
         return (B) this;
     }
 
-    /** Players can move items freely, like a storage GUI. */
     public @NotNull B enableAllInteractions() {
         this.clearModifiers = true;
         return (B) this;
     }
 
-    /** Allows one specific interaction that is otherwise blocked. */
     public @NotNull B enableInteraction(@NotNull InteractionModifier modifier) {
         removedModifiers.add(modifier);
         return (B) this;
@@ -89,7 +86,6 @@ public abstract class BaseGuiBuilder<G extends BaseGui, B extends BaseGuiBuilder
         return (B) this;
     }
 
-    /** Chains with any previously set apply steps rather than replacing them. */
     public @NotNull B apply(@NotNull Consumer<G> consumer) {
         this.postBuild = this.postBuild == null ? consumer : this.postBuild.andThen(consumer);
         return (B) this;
@@ -99,7 +95,6 @@ public abstract class BaseGuiBuilder<G extends BaseGui, B extends BaseGuiBuilder
         return title;
     }
 
-    /** Subclasses call this from {@link #create()}. */
     protected @NotNull G finish(@NotNull G gui) {
         if (clearModifiers) {
             gui.clearInteractionModifiers();

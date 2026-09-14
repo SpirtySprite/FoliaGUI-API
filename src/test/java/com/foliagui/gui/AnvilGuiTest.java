@@ -14,12 +14,6 @@ import org.mockbukkit.mockbukkit.inventory.InventoryMock;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * MockBukkit's {@code MenuType.create(...)} mock doesn't return a real {@code AnvilView}, so the actual
- * anvil rendering path (the part that needs a genuine view) can't be exercised here. These tests cover what
- * doesn't depend on that: the session bookkeeping, and that AnvilGui correctly stays out of the way of
- * unrelated GUI activity.
- */
 class AnvilGuiTest {
 
     private static ServerMock server;
