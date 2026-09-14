@@ -5,17 +5,11 @@ import com.foliagui.gui.InteractionModifier;
 import com.foliagui.item.GuiItem;
 import org.bukkit.event.inventory.InventoryAction;
 
-/** Translates a raw Bukkit {@link InventoryAction} plus a GUI's {@link InteractionModifier}s into a cancel/allow decision. */
 final class InteractionGuard {
 
     private InteractionGuard() {
     }
 
-    /**
-     * A slot holding a {@link GuiItem} is always protected from move/swap/drop regardless of the GUI's
-     * interaction modifiers; those modifiers only govern raw, item-less slots (e.g. a
-     * {@link com.foliagui.gui.StorageGui}'s free storage area).
-     */
     static boolean cancelTop(BaseGui gui, InventoryAction action, boolean protectedSlot) {
         return switch (action) {
             case PLACE_ALL, PLACE_SOME, PLACE_ONE -> protectedSlot || gui.isModifierActive(InteractionModifier.PREVENT_ITEM_PLACE);
@@ -30,7 +24,6 @@ final class InteractionGuard {
         };
     }
 
-    /** Cancels clicks in the player's own inventory, mainly to stop items reaching the GUI. */
     static boolean cancelBottom(BaseGui gui, InventoryAction action) {
         return switch (action) {
             case MOVE_TO_OTHER_INVENTORY -> gui.isModifierActive(InteractionModifier.PREVENT_ITEM_PLACE);

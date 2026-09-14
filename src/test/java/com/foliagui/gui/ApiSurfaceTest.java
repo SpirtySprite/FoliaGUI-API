@@ -33,8 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Covers the round-3 additions: custom events, GuiItem click-type/permission helpers, CycleItem,
- *  force-open, null guards, and ItemStackSerializer. */
 class ApiSurfaceTest {
 
     private static ServerMock server;
@@ -63,10 +61,6 @@ class ApiSurfaceTest {
         server.getScheduler().performOneTick();
     }
 
-    // ------------------------------------------------------------------------------------------------
-    // Null guards
-    // ------------------------------------------------------------------------------------------------
-
     @Test
     void setItemRejectsNullGuiItem() {
         Gui gui = Gui.builder().rows(1).title("&8Test").create();
@@ -84,10 +78,6 @@ class ApiSurfaceTest {
         Gui gui = Gui.builder().rows(1).title("&8Test").create();
         assertThrows(NullPointerException.class, () -> gui.removeItem((GuiItem) null));
     }
-
-    // ------------------------------------------------------------------------------------------------
-    // Custom events
-    // ------------------------------------------------------------------------------------------------
 
     @Test
     void guiOpenEventCancellationBlocksTheOpen() {
@@ -152,10 +142,6 @@ class ApiSurfaceTest {
         }
     }
 
-    // ------------------------------------------------------------------------------------------------
-    // GuiItem: click-type dispatch, permission gate
-    // ------------------------------------------------------------------------------------------------
-
     @Test
     void clickTypeHandlersDispatchSeparately() {
         AtomicInteger left = new AtomicInteger();
@@ -200,10 +186,6 @@ class ApiSurfaceTest {
         assertEquals(1, denied.get());
     }
 
-    // ------------------------------------------------------------------------------------------------
-    // CycleItem
-    // ------------------------------------------------------------------------------------------------
-
     @Test
     void cycleItemAdvancesAndWrapsAround() {
         CycleItem<String> cycle = CycleItem.of(List.of("A", "B", "C"), name -> new ItemStack(Material.PAPER));
@@ -225,10 +207,6 @@ class ApiSurfaceTest {
         assertEquals("Off", cycle.current());
     }
 
-    // ------------------------------------------------------------------------------------------------
-    // Force-open
-    // ------------------------------------------------------------------------------------------------
-
     @Test
     void forceOpenReopensAfterAPlayerInitiatedClose() {
         Gui gui = Gui.builder().rows(1).title("&8Force").create();
@@ -236,8 +214,7 @@ class ApiSurfaceTest {
         openAndFlush(gui, player);
         assertTrue(GuiManager.hasGuiOpen(player));
 
-        player.closeInventory(); // player-initiated, not via gui.close(player)
-        // The close handler itself schedules the reopen as a new task, so it needs a second tick to run.
+        player.closeInventory();
         server.getScheduler().performTicks(2);
 
         assertTrue(GuiManager.hasGuiOpen(player), "force-open should have reopened the GUI");
@@ -254,10 +231,6 @@ class ApiSurfaceTest {
 
         assertFalse(GuiManager.hasGuiOpen(player), "gui.close() should not be reopened by force-open");
     }
-
-    // ------------------------------------------------------------------------------------------------
-    // ItemStackSerializer
-    // ------------------------------------------------------------------------------------------------
 
     @Test
     void itemStackSerializerRoundTrips() {

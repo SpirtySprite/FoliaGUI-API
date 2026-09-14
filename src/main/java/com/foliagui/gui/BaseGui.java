@@ -31,16 +31,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Base class for every GUI. open/close/update route through the Folia scheduler and work from any thread;
- * item mutators just touch the map and need update()/open() to apply. One viewer per instance.
- */
 public abstract class BaseGui implements InventoryHolder {
 
     private Component title;
     private final int size;
-    private final GuiType guiType; // null => chest sized by rows
-    private final int rows;        // only meaningful for chest GUIs
+    private final GuiType guiType;
+    private final int rows;
 
     private volatile Inventory inventory;
     private final Map<Integer, GuiItem> guiItems = new ConcurrentHashMap<>();
@@ -110,7 +106,6 @@ public abstract class BaseGui implements InventoryHolder {
         renderedStacks[slot] = stack;
     }
 
-    /** 0-indexed flat slot. */
     public @NotNull BaseGui setItem(int slot, @NotNull GuiItem guiItem) {
         Objects.requireNonNull(guiItem, "guiItem cannot be null");
         validateSlot(slot);
@@ -119,7 +114,6 @@ public abstract class BaseGui implements InventoryHolder {
         return this;
     }
 
-    /** 1-indexed (row, column). */
     public @NotNull BaseGui setItem(int row, int column, @NotNull GuiItem guiItem) {
         return setItem(Slot.of(row, column), guiItem);
     }
@@ -133,7 +127,6 @@ public abstract class BaseGui implements InventoryHolder {
         return this;
     }
 
-    /** Fills the first available empty slots, skipping occupied ones. */
     public @NotNull BaseGui addItem(@NotNull GuiItem... items) {
         Objects.requireNonNull(items, "items cannot be null");
         int slot = 0;
@@ -161,7 +154,6 @@ public abstract class BaseGui implements InventoryHolder {
         return removeItem(Slot.of(row, column));
     }
 
-    /** Removes wherever it appears in this GUI. */
     public @NotNull BaseGui removeItem(@NotNull GuiItem guiItem) {
         Objects.requireNonNull(guiItem, "guiItem cannot be null");
         guiItems.values().removeIf(existing -> existing.equals(guiItem));
@@ -176,15 +168,10 @@ public abstract class BaseGui implements InventoryHolder {
         return guiItems.get(slot);
     }
 
-    /**
-     * Resolves the item actually displayed in a slot right now, including dynamic content like a
-     * {@link PaginatedGui} page. The click listener uses this so page/scroll items dispatch actions.
-     */
     public @Nullable GuiItem itemAt(int slot) {
         return guiItems.get(slot);
     }
 
-    /** Keeps the slot's action, pushes the change to viewers immediately. No-op if the slot is empty. */
     public @NotNull BaseGui updateItem(int slot, @NotNull ItemStack itemStack) {
         Objects.requireNonNull(itemStack, "itemStack cannot be null");
         GuiItem existing = guiItems.get(slot);
@@ -205,10 +192,6 @@ public abstract class BaseGui implements InventoryHolder {
         return this;
     }
 
-    /**
-     * Opens on the correct region thread; safe from any thread. Logs a warning (best-effort) if another
-     * player already has this exact instance open, see the one-viewer-per-instance rule above.
-     */
     public void open(@NotNull HumanEntity player) {
         Objects.requireNonNull(player, "player cannot be null");
         if (player.isSleeping()) {
@@ -238,7 +221,6 @@ public abstract class BaseGui implements InventoryHolder {
         applyToInventory(this::populateInventory);
     }
 
-    /** Rebuilds contents every {@code ticks} ticks while a player has this open. {@code 0} disables. */
     public @NotNull BaseGui setUpdateInterval(long ticks) {
         this.updateIntervalTicks = Math.max(0, ticks);
         return this;
@@ -268,10 +250,6 @@ public abstract class BaseGui implements InventoryHolder {
         }
     }
 
-    /**
-     * If set, a player-initiated close (Escape, inventory swap, ...) reopens the GUI immediately. Closes via
-     * {@link #close(HumanEntity)} are unaffected. Useful for dialogs that must be resolved, not dismissed.
-     */
     public @NotNull BaseGui setForceOpen(boolean forceOpen) {
         this.forceOpen = forceOpen;
         return this;
@@ -303,7 +281,6 @@ public abstract class BaseGui implements InventoryHolder {
             Arrays.fill(renderedItems, null);
             Arrays.fill(renderedStacks, null);
             populateInventory();
-            // bracket with updating flag so the synchronous close/open events skip user callbacks
             for (HumanEntity viewer : viewers) {
                 FoliaGUI.scheduler().runForEntity(viewer, () -> {
                     updating = true;
@@ -317,10 +294,6 @@ public abstract class BaseGui implements InventoryHolder {
         });
     }
 
-    /**
-     * Runs a mutation on the thread owning the current viewer's region (or immediately if no viewers).
-     * Skips the scheduler round-trip if the calling thread already owns that region.
-     */
     private void applyToInventory(@NotNull Runnable mutation) {
         List<HumanEntity> viewers = inventory.getViewers();
         if (viewers.isEmpty()) {
@@ -332,7 +305,6 @@ public abstract class BaseGui implements InventoryHolder {
             mutation.run();
             return;
         }
-        // single-viewer GUI, all valid viewers share a region, dispatch on the first
         FoliaGUI.scheduler().runForEntity(viewer, mutation, null);
     }
 
@@ -355,7 +327,6 @@ public abstract class BaseGui implements InventoryHolder {
         return interactionModifiers.contains(modifier);
     }
 
-    /** Fires after slot-specific actions. */
     public @NotNull BaseGui setDefaultClickAction(@Nullable GuiAction<InventoryClickEvent> action) {
         this.defaultClickAction = action;
         return this;
@@ -391,7 +362,6 @@ public abstract class BaseGui implements InventoryHolder {
         return this;
     }
 
-    /** Fires before the default click action. */
     public @NotNull BaseGui setSlotAction(int slot, @Nullable GuiAction<InventoryClickEvent> action) {
         validateSlot(slot);
         if (action == null) {
@@ -433,12 +403,10 @@ public abstract class BaseGui implements InventoryHolder {
         return size;
     }
 
-    /** 0 for typed GUIs. */
     public int getRows() {
         return rows;
     }
 
-    /** {@code null} for chest GUIs. */
     public @Nullable GuiType getGuiType() {
         return guiType;
     }

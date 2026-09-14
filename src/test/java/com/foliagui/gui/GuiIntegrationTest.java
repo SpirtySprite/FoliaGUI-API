@@ -20,10 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * End-to-end tests driving real {@link org.bukkit.event.inventory.InventoryClickEvent}s through
- * {@link com.foliagui.listener.GuiListener}, via MockBukkit's simulated server and player.
- */
 class GuiIntegrationTest {
 
     private static ServerMock server;
@@ -45,7 +41,6 @@ class GuiIntegrationTest {
         player = server.addPlayer();
     }
 
-    /** Flushes the Folia-safe scheduler dispatch that {@code gui.open(player)} goes through. */
     private static void openAndFlush(BaseGui gui, PlayerMock viewer) {
         gui.open(viewer);
         server.getScheduler().performOneTick();
@@ -77,7 +72,6 @@ class GuiIntegrationTest {
     @Test
     void freeSlotsInAStorageGuiStayOpen() {
         StorageGui gui = StorageGui.builder().rows(1).title("&8Storage").create();
-        // slot 0 left empty on purpose: it is raw player storage, not a GuiItem.
         openAndFlush(gui, player);
 
         InventoryClickEvent event = player.simulateInventoryClick(0);
@@ -87,8 +81,6 @@ class GuiIntegrationTest {
 
     @Test
     void editableGuiItemsOptOutOfTheAutomaticProtectionAStorageGuiWouldOtherwiseApply() {
-        // editable() only bypasses the "always protect a GuiItem" rule — it doesn't disable the GUI's own
-        // interaction modifiers, so this needs a GUI (like StorageGui) that already has those cleared.
         StorageGui gui = StorageGui.builder().rows(1).title("&8Storage").create();
         GuiItem item = ItemBuilder.of(Material.EMERALD).asGuiItem();
         item.editable(true);
@@ -104,7 +96,7 @@ class GuiIntegrationTest {
     void cooldownDropsARapidSecondClick() {
         AtomicInteger clicks = new AtomicInteger();
         GuiItem item = ItemBuilder.of(Material.DIAMOND).asGuiItem(event -> clicks.incrementAndGet());
-        item.cooldown(200); // 10s — comfortably longer than this test takes to run twice
+        item.cooldown(200);
         Gui gui = Gui.builder().rows(1).title("&8Test").create();
         gui.setItem(0, item);
         openAndFlush(gui, player);

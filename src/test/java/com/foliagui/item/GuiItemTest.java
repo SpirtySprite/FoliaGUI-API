@@ -60,7 +60,6 @@ class GuiItemTest {
 
     @Test
     void twoItemsWithTheSameStackAreNotEqual() {
-        // Identity, not stack contents, is what equals() means for a GuiItem.
         GuiItem a = new GuiItem(Material.DIAMOND);
         GuiItem b = new GuiItem(Material.DIAMOND);
         assertNotEquals(a, b);
@@ -88,7 +87,7 @@ class GuiItemTest {
 
     @Test
     void cooldownBlocksAnImmediateSecondClick() {
-        GuiItem item = new GuiItem(Material.STONE).cooldown(200); // 10s, comfortably longer than the test
+        GuiItem item = new GuiItem(Material.STONE).cooldown(200);
         assertEquals(200, item.getCooldownTicks());
         assertTrue(item.tryClick(), "the first click should always be allowed");
         assertFalse(item.tryClick(), "an immediate second click should be dropped");

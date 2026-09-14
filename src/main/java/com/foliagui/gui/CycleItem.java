@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-/** A button that cycles through a fixed list of values on each click (On/Off/Auto, difficulty, color, ...). */
 public final class CycleItem<T> {
 
     private final List<T> values;
@@ -31,7 +30,6 @@ public final class CycleItem<T> {
         return values.get(index.get());
     }
 
-    /** Wraps around. */
     public @NotNull T advance() {
         int next = index.updateAndGet(i -> (i + 1) % values.size());
         return values.get(next);
@@ -45,7 +43,6 @@ public final class CycleItem<T> {
         return renderer.apply(current());
     }
 
-    /** On click, advances and pushes the re-rendered item via {@link BaseGui#updateItem(int, ItemStack)}. */
     public @NotNull GuiItem asGuiItem(@NotNull BaseGui gui, int slot) {
         return new GuiItem(render(), event -> {
             advance();

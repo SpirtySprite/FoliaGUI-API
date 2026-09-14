@@ -12,10 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiPredicate;
 
-/**
- * A {@link PaginatedGui} filtered by a search term. Items added via {@link #addSearchableItem} live in a
- * master list separate from the paged content; {@link #search(String)} repopulates the page with matches.
- */
 public class SearchablePaginatedGui extends PaginatedGui {
 
     private final List<GuiItem> master = new CopyOnWriteArrayList<>();
@@ -34,7 +30,6 @@ public class SearchablePaginatedGui extends PaginatedGui {
         super(type, title, pageSize);
     }
 
-    /** Shown immediately unless a search is currently active and {@code searchKey} doesn't match it. */
     public @NotNull SearchablePaginatedGui addSearchableItem(@NotNull GuiItem item, @NotNull String searchKey) {
         master.add(item);
         searchKeys.put(item, searchKey);
@@ -44,13 +39,11 @@ public class SearchablePaginatedGui extends PaginatedGui {
         return this;
     }
 
-    /** Default matcher is case-insensitive substring match. */
     public @NotNull SearchablePaginatedGui matcher(@NotNull BiPredicate<GuiItem, String> matcher) {
         this.matcher = matcher;
         return this;
     }
 
-    /** Blank {@code term} clears the filter. */
     public @NotNull SearchablePaginatedGui search(@NotNull String term) {
         this.currentTerm = term;
         clearPageItems();
@@ -71,7 +64,6 @@ public class SearchablePaginatedGui extends PaginatedGui {
         return currentTerm;
     }
 
-    /** The special term {@code "clear"} resets the filter instead of searching for it. */
     public void promptSearch(@NotNull Player player) {
         ChatPrompt.ask(player, "&eType a search term (or 'clear'):", 0, term -> {
             if (term == null) {

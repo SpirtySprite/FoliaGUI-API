@@ -9,10 +9,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Supplier;
 
-/**
- * Bundles the border, back-button, and close-button items most menus repeat. Each call builds a fresh
- * {@link GuiItem}, so a single instance is safe to share and reuse across every menu in a plugin.
- */
 public final class GuiTheme {
 
     private static final Component BLANK_NAME = Text.label(" ");
@@ -49,7 +45,6 @@ public final class GuiTheme {
         gui.filler().fillBorder(border());
     }
 
-    /** Wires the click action to {@link GuiNavigator#back}. */
     public @NotNull GuiItem backButton() {
         GuiItem item = backBase.get();
         item.setAction(event -> GuiNavigator.back(event.getWhoClicked()));

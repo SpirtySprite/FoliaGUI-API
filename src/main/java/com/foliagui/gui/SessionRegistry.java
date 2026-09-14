@@ -9,13 +9,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * A small per-player session map, keyed by {@link UUID}. Backs {@link AnvilGui}, {@link MerchantGui}, and
- * {@link ChatPrompt}, which all otherwise reimplemented the same "one pending thing per player" bookkeeping.
- * Package-private: this is plumbing, not part of the public API.
- *
- * @param <T> the session payload type
- */
 final class SessionRegistry<T> {
 
     private final Map<UUID, T> sessions = new ConcurrentHashMap<>();

@@ -14,17 +14,11 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.Objects;
 
-/**
- * {@link #toBase64}/{@link #fromBase64} use standard Java object serialization. {@link #toBase64Compact}/
- * {@link #fromBase64Compact} use Paper's NBT-based encoding instead, smaller and without the class-registry
- * overhead; prefer it unless you need compatibility with older tooling.
- */
 public final class ItemStackSerializer {
 
     private ItemStackSerializer() {
     }
 
-    /** Null entries (empty slots) round-trip back to null. */
     public static @NotNull String toBase64(@Nullable ItemStack @NotNull [] contents) {
         Objects.requireNonNull(contents, "contents cannot be null");
         try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
@@ -39,7 +33,6 @@ public final class ItemStackSerializer {
         }
     }
 
-    /** Expects a string produced by {@link #toBase64}; throws {@link IllegalStateException} otherwise. */
     public static @Nullable ItemStack @NotNull [] fromBase64(@NotNull String base64) {
         Objects.requireNonNull(base64, "base64 cannot be null");
         try (ByteArrayInputStream byteStream = new ByteArrayInputStream(Base64.getDecoder().decode(base64));
@@ -55,7 +48,6 @@ public final class ItemStackSerializer {
         }
     }
 
-    /** Null entries (empty slots) round-trip back to null. */
     public static @NotNull String toBase64Compact(@Nullable ItemStack @NotNull [] contents) {
         Objects.requireNonNull(contents, "contents cannot be null");
         try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
@@ -76,7 +68,6 @@ public final class ItemStackSerializer {
         }
     }
 
-    /** Expects a string produced by {@link #toBase64Compact}; throws {@link IllegalStateException} otherwise. */
     public static @Nullable ItemStack @NotNull [] fromBase64Compact(@NotNull String base64) {
         Objects.requireNonNull(base64, "base64 cannot be null");
         try (ByteArrayInputStream byteStream = new ByteArrayInputStream(Base64.getDecoder().decode(base64));

@@ -108,13 +108,11 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** Clamps to a minimum of 1. */
     public @NotNull B amount(int amount) {
         itemStack.setAmount(Math.max(1, amount));
         return (B) this;
     }
 
-    /** Ignores the enchantment's normal level cap. */
     public @NotNull B enchant(@NotNull Enchantment enchantment, int level) {
         return enchant(enchantment, level, true);
     }
@@ -126,7 +124,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** Ignores level restrictions. */
     public @NotNull B enchants(@NotNull Map<Enchantment, Integer> levels) {
         if (meta != null) {
             levels.forEach((enchantment, level) -> meta.addEnchant(enchantment, level, true));
@@ -152,7 +149,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return meta != null && meta.hasEnchant(enchantment);
     }
 
-    /** Copy; empty if none or meta is unavailable. */
     public @NotNull Map<Enchantment, Integer> getEnchants() {
         return meta != null ? new HashMap<>(meta.getEnchants()) : Map.of();
     }
@@ -164,7 +160,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** Also hides the durability tooltip when set unbreakable. */
     public @NotNull B unbreakable(boolean unbreakable) {
         if (meta != null) {
             meta.setUnbreakable(unbreakable);
@@ -184,7 +179,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** Configurer receives the component already populated with whatever is currently set. */
     public @NotNull B customModelData(@NotNull Consumer<CustomModelDataComponent> configurer) {
         if (meta != null) {
             CustomModelDataComponent component = meta.getCustomModelDataComponent();
@@ -194,7 +188,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** Distinct from the lore-visible display name; not renameable via an anvil. */
     public @NotNull B itemName(@NotNull String legacy) {
         if (meta != null) {
             meta.itemName(Text.label(legacy));
@@ -230,7 +223,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** Overrides anvil/enchanting-table cost, not actual enchant eligibility. */
     public @NotNull B enchantable(int value) {
         if (meta != null) {
             meta.setEnchantable(value);
@@ -259,7 +251,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** Item left in the slot once this stack is fully consumed, e.g. an empty bottle. */
     public @NotNull B useRemainder(@NotNull ItemStack remainder) {
         if (meta != null) {
             meta.setUseRemainder(remainder);
@@ -294,7 +285,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** Works even on items that aren't normally equippable. */
     public @NotNull B equippable(@NotNull Consumer<EquippableComponent> configurer) {
         if (meta != null) {
             EquippableComponent component = meta.getEquippable();
@@ -355,7 +345,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** No-op if this item doesn't track a repair cost. */
     public @NotNull B repairCost(int levels) {
         if (meta instanceof Repairable repairable) {
             repairable.setRepairCost(levels);
@@ -363,7 +352,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** Glint without a real enchantment; no fake enchant appears in the tooltip. */
     public @NotNull B glow(boolean glow) {
         if (meta != null) {
             meta.setEnchantmentGlintOverride(glow ? Boolean.TRUE : null);
@@ -378,7 +366,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** Valid range is 1-99. Pass {@code null} to restore the material default. */
     public @NotNull B maxStackSize(@Nullable Integer max) {
         if (meta != null) {
             meta.setMaxStackSize(max);
@@ -386,7 +373,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** No-op if this item isn't damageable. */
     public @NotNull B damage(int damage) {
         if (meta instanceof Damageable damageable) {
             damageable.setDamage(Math.max(0, damage));
@@ -394,7 +380,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** No-op if not damageable. Pass {@code null} to restore the material default. */
     public @NotNull B maxDamage(@Nullable Integer maxDamage) {
         if (meta instanceof Damageable damageable) {
             damageable.setMaxDamage(maxDamage);
@@ -442,7 +427,6 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
-    /** Returns a fresh copy each call; the builder stays safe to keep configuring afterwards. */
     public @NotNull ItemStack build() {
         if (meta != null) {
             itemStack.setItemMeta(meta);

@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Covers the expanded metadata surface on {@link BaseItemBuilder}: enchants, PDC, and item components. */
 class ItemMetadataTest {
 
     @BeforeAll
@@ -91,9 +90,6 @@ class ItemMetadataTest {
 
     @Test
     void gliderAndFireResistantFlagsApply() {
-        // Asserted against the builder's own meta rather than after a build()+getItemMeta() round trip:
-        // MockBukkit's ItemStack meta serialization doesn't yet carry these very new (1.21+) flags through
-        // a clone, even though setGlider/setFireResistant themselves work correctly on the live meta.
         ItemBuilder builder = ItemBuilder.of(Material.STONE)
                 .glider(true)
                 .fireResistant(true);
@@ -104,8 +100,6 @@ class ItemMetadataTest {
 
     @Test
     void foodComponentConfiguresNutrition() {
-        // See the note on gliderAndFireResistantFlagsApply: checked against the live meta because
-        // MockBukkit doesn't yet round-trip the food component through ItemStack#clone().
         ItemBuilder builder = ItemBuilder.of(Material.COOKED_BEEF)
                 .food(food -> {
                     food.setNutrition(20);

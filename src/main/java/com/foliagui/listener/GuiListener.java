@@ -25,12 +25,6 @@ import org.bukkit.inventory.Inventory;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * The single Bukkit listener backing every GUI. Recognises our inventories by their holder, delegates
- * cancel/allow decisions to {@link InteractionGuard}, bridges to the public events via {@link GuiEventBridge},
- * and dispatches per-GUI callbacks. Inventory events already fire on the region thread owning the acting
- * player, so callbacks run on the correct Folia thread with no extra scheduling here.
- */
 public final class GuiListener implements Listener {
 
     private static final Logger LOGGER = Logger.getLogger(GuiListener.class.getName());
@@ -149,7 +143,6 @@ public final class GuiListener implements Listener {
         SignGui.handleQuit(event.getPlayer());
     }
 
-    /** Logs instead of propagating, so one broken handler doesn't stop the rest of the callback chain. */
     private static <T extends org.bukkit.event.Event> void run(GuiAction<T> action, T event) {
         if (action == null) {
             return;

@@ -9,11 +9,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Per-player back-stack so menus don't each hand-wire their own "back" button. {@link #open} pushes the
- * current GUI before navigating; {@link #back} pops it, typically from {@link GuiTheme#backButton()}.
- * Plain {@code gui.open(player)} skips history, useful for "jump to hub" buttons.
- */
 public final class GuiNavigator {
 
     private static final Map<UUID, Deque<BaseGui>> HISTORY = new ConcurrentHashMap<>();
@@ -48,7 +43,6 @@ public final class GuiNavigator {
         HISTORY.remove(player.getUniqueId());
     }
 
-    /** Used by {@code FoliaGUI.shutdown()}. */
     public static void clearAll() {
         HISTORY.clear();
     }

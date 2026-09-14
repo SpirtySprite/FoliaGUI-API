@@ -20,10 +20,8 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-/** A virtual villager trade window built on {@link Bukkit#createMerchant}; opens on the player's region thread. */
 public final class MerchantGui {
 
-    /** Result slot of a merchant view; a click here completes the currently selected trade. */
     private static final int RESULT_SLOT = 2;
 
     private static final SessionRegistry<MerchantGui> SESSIONS = new SessionRegistry<>();
@@ -57,7 +55,6 @@ public final class MerchantGui {
         }, null);
     }
 
-    /** Called by GuiListener for non-BaseGui inventories. Returns whether the click belonged to an active session. */
     @ApiStatus.Internal
     public static boolean handleClick(@NotNull InventoryClickEvent event) {
         MerchantGui gui = SESSIONS.get(event.getWhoClicked());
@@ -69,14 +66,12 @@ public final class MerchantGui {
             MerchantRecipe recipe = merchantInventory.getSelectedRecipe();
             if (recipe != null) {
                 Player player = (Player) event.getWhoClicked();
-                // Vanilla applies the trade this same tick; hand off the recipe that was used.
                 FoliaGUI.scheduler().runForEntity(player, () -> gui.onTrade.accept(player, recipe), null);
             }
         }
         return true;
     }
 
-    /** Drops every pending session without firing close callbacks. Used by {@code FoliaGUI.shutdown()}. */
     public static void clearSessions() {
         SESSIONS.clear();
     }
@@ -114,7 +109,6 @@ public final class MerchantGui {
             return this;
         }
 
-        /** Unlimited-use recipe from a result and up to two ingredients. */
         public @NotNull Builder addRecipe(@NotNull ItemStack result, @NotNull List<ItemStack> ingredients) {
             MerchantRecipe recipe = new MerchantRecipe(result, Integer.MAX_VALUE);
             recipe.setIngredients(ingredients);
@@ -122,7 +116,6 @@ public final class MerchantGui {
             return this;
         }
 
-        /** Fires after vanilla applies the trade (ingredients taken, result given). */
         public @NotNull Builder onTrade(@NotNull BiConsumer<Player, MerchantRecipe> onTrade) {
             this.onTrade = onTrade;
             return this;
@@ -133,7 +126,6 @@ public final class MerchantGui {
             return this;
         }
 
-        /** @throws IllegalStateException if no recipe was added */
         public @NotNull MerchantGui build() {
             if (recipes.isEmpty()) {
                 throw new IllegalStateException("MerchantGui needs at least one recipe; call addRecipe(...) first");

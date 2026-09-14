@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-/** Text-input dialog built on a virtual anvil ({@code MenuType.ANVIL}); opens on the player's region thread. */
 public final class AnvilGui {
 
     private static final int RESULT_SLOT = 2;
@@ -99,7 +98,6 @@ public final class AnvilGui {
         return true;
     }
 
-    /** Used by {@code FoliaGUI.shutdown()}; skips close callbacks. */
     public static void clearSessions() {
         SESSIONS.clear();
     }
@@ -123,7 +121,6 @@ public final class AnvilGui {
 
     private void apply(@NotNull Player player, @NotNull AnvilView view, @NotNull Response response) {
         if (response.close) {
-            // marks this as expected so forceOpen doesn't reopen it on the real close event
             allowedCloses.add(player.getUniqueId());
             FoliaGUI.scheduler().runForEntity(player, player::closeInventory, null);
         } else if (response.newText != null) {
@@ -156,7 +153,6 @@ public final class AnvilGui {
             return new Response(false, null);
         }
 
-        /** Replaces the input field text without closing, e.g. a validation hint. */
         public static @NotNull Response text(@NotNull String newText) {
             return new Response(false, newText);
         }
@@ -180,7 +176,6 @@ public final class AnvilGui {
             return stack;
         }
 
-        /** Legacy color codes. */
         public @NotNull Builder title(@NotNull String title) {
             this.title = Text.of(title);
             return this;
@@ -191,13 +186,11 @@ public final class AnvilGui {
             return this;
         }
 
-        /** Ignored if a custom left item is set. */
         public @NotNull Builder text(@NotNull String text) {
             this.leftItem = defaultInput(text);
             return this;
         }
 
-        /** The item's display name becomes the initial text. */
         public @NotNull Builder itemLeft(@NotNull ItemStack item) {
             this.leftItem = item;
             return this;
@@ -218,7 +211,6 @@ public final class AnvilGui {
             return this;
         }
 
-        /** Reopens the dialog immediately if the player presses Escape instead of completing it. */
         public @NotNull Builder forceOpen(boolean forceOpen) {
             this.forceOpen = forceOpen;
             return this;

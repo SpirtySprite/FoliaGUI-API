@@ -9,7 +9,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
 
-/** Ready-made yes/no dialog: green confirm / red cancel buttons, closes itself after either choice. */
 public final class Confirmation {
 
     private Confirmation() {
@@ -33,19 +32,16 @@ public final class Confirmation {
         private Consumer<Player> onExpire = player -> {
         };
 
-        /** Legacy color codes. */
         public @NotNull Builder title(@NotNull String title) {
             this.title = title;
             return this;
         }
 
-        /** Click action gets overwritten by the dialog. */
         public @NotNull Builder confirmItem(@NotNull GuiItem item) {
             this.confirmItem = item;
             return this;
         }
 
-        /** Click action gets overwritten by the dialog. */
         public @NotNull Builder cancelItem(@NotNull GuiItem item) {
             this.cancelItem = item;
             return this;
@@ -61,7 +57,6 @@ public final class Confirmation {
             return this;
         }
 
-        /** Closes and runs {@code onExpire} if still unanswered after {@code ticks}. {@code 0} disables. */
         public @NotNull Builder expireAfter(long ticks, @NotNull Consumer<Player> onExpire) {
             this.expireTicks = Math.max(0, ticks);
             this.onExpire = onExpire;
@@ -93,7 +88,6 @@ public final class Confirmation {
             gui.open(player);
             if (expireTicks > 0) {
                 FoliaGUI.scheduler().runForEntityLater(player, () -> {
-                    // skip if the player has since opened something else
                     if (GuiManager.getOpenGui(player) == gui) {
                         gui.close(player);
                         onExpire.accept(player);
