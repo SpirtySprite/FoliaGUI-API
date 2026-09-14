@@ -55,10 +55,19 @@ public final class GuiManager {
     }
 
     public static void closeAll() {
+        boolean enabled = FoliaGUI.plugin().isEnabled();
         for (UUID uuid : OPEN.keySet()) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
+            if (player == null) {
+                continue;
+            }
+            if (enabled) {
                 FoliaGUI.scheduler().runForEntity(player, player::closeInventory, null);
+                continue;
+            }
+            try {
+                player.closeInventory();
+            } catch (RuntimeException ignored) {
             }
         }
     }
