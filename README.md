@@ -520,6 +520,15 @@ FoliaGUI.theme(new GuiTheme()
 FoliaGUI.theme().success(player);
 ```
 
+The previous and next buttons can also be built from the menu they belong to, for example to show the
+current page in their lore. They are rebuilt whenever the page changes:
+
+```java
+new GuiTheme().nextButtonItem(gui -> ItemBuilder.of(Material.ARROW)
+        .nameAny("<yellow>Next page").loreAny("<gray>Page " + gui.getCurrentPage() + " of " + gui.getPagesCount())
+        .asGuiItem());
+```
+
 ### Animation and auto-refresh
 
 For a hand-driven animation loop tied to a GUI and its viewer:

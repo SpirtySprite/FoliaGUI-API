@@ -40,10 +40,10 @@ public final class GuiTheme {
             () -> ItemBuilder.of(Material.ARROW).name(BACK_NAME).asGuiItem();
     private Supplier<GuiItem> closeBase =
             () -> ItemBuilder.of(Material.BARRIER).name(CLOSE_NAME).asGuiItem();
-    private Supplier<GuiItem> previousBase =
-            () -> ItemBuilder.of(Material.ARROW).name(PREVIOUS_NAME).asGuiItem();
-    private Supplier<GuiItem> nextBase =
-            () -> ItemBuilder.of(Material.ARROW).name(NEXT_NAME).asGuiItem();
+    private Function<PaginatedGui, GuiItem> previousBase =
+            gui -> ItemBuilder.of(Material.ARROW).name(PREVIOUS_NAME).asGuiItem();
+    private Function<PaginatedGui, GuiItem> nextBase =
+            gui -> ItemBuilder.of(Material.ARROW).name(NEXT_NAME).asGuiItem();
     private Function<PaginatedGui, GuiItem> pageIndicator = gui -> ItemBuilder.of(Material.PAPER)
             .name(Text.label("&fPage &e" + gui.getCurrentPage() + "&7/&e" + gui.getPagesCount()))
             .amount(Math.min(64, gui.getCurrentPage()))
@@ -78,11 +78,21 @@ public final class GuiTheme {
     }
 
     public @NotNull GuiTheme previousButtonItem(@NotNull Supplier<GuiItem> previousBase) {
+        this.previousBase = gui -> previousBase.get();
+        return this;
+    }
+
+    public @NotNull GuiTheme previousButtonItem(@NotNull Function<PaginatedGui, GuiItem> previousBase) {
         this.previousBase = previousBase;
         return this;
     }
 
     public @NotNull GuiTheme nextButtonItem(@NotNull Supplier<GuiItem> nextBase) {
+        this.nextBase = gui -> nextBase.get();
+        return this;
+    }
+
+    public @NotNull GuiTheme nextButtonItem(@NotNull Function<PaginatedGui, GuiItem> nextBase) {
         this.nextBase = nextBase;
         return this;
     }
@@ -175,7 +185,7 @@ public final class GuiTheme {
     }
 
     public @NotNull GuiItem previousButton(@NotNull PaginatedGui gui) {
-        GuiItem item = previousBase.get();
+        GuiItem item = previousBase.apply(gui);
         item.setAction(event -> {
             if (gui.previous()) {
                 page(event.getWhoClicked());
@@ -185,7 +195,7 @@ public final class GuiTheme {
     }
 
     public @NotNull GuiItem nextButton(@NotNull PaginatedGui gui) {
-        GuiItem item = nextBase.get();
+        GuiItem item = nextBase.apply(gui);
         item.setAction(event -> {
             if (gui.next()) {
                 page(event.getWhoClicked());

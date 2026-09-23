@@ -200,4 +200,24 @@ class UpgradeFeaturesTest {
         ItemStack named = ItemBuilder.of(Material.STONE).nameAny("&aHello <bold>there").build();
         assertEquals("Hello there", Text.plain(named.getItemMeta().displayName()));
     }
+
+    @Test
+    void arrowsCanShowThePageTheyBelongTo() {
+        GuiTheme previous = FoliaGUI.theme();
+        FoliaGUI.theme(new GuiTheme().nextButtonItem(page -> ItemBuilder.of(Material.ARROW)
+                .amount(page.getCurrentPage()).asGuiItem()));
+        try {
+            PaginatedGui gui = new PaginatedGui(2, Component.text("Pages"), 0);
+            gui.pageControls();
+            gui.addPageItem(IntStream.range(0, 60).mapToObj(index -> new GuiItem(Material.STONE)).toList());
+            openAndFlush(gui);
+            int next = Slot.of(2, 9);
+            assertEquals(1, gui.getInventory().getItem(next).getAmount());
+            player.simulateInventoryClick(next);
+            server.getScheduler().performOneTick();
+            assertEquals(2, gui.getInventory().getItem(next).getAmount());
+        } finally {
+            FoliaGUI.theme(previous);
+        }
+    }
 }
