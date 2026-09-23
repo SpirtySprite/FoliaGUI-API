@@ -26,6 +26,10 @@ public final class PaginatedGuiBuilder extends BaseGuiBuilder<PaginatedGui, Pagi
         return this;
     }
 
+    public @NotNull PaginatedGuiBuilder pageControls(boolean fillRow) {
+        return apply(gui -> gui.pageControls(fillRow));
+    }
+
     @Override
     public @NotNull PaginatedGui create() {
         PaginatedGui gui = type == null
