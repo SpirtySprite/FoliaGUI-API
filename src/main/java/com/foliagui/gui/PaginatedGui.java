@@ -92,6 +92,10 @@ public class PaginatedGui extends BaseGui {
         return this;
     }
 
+    public <T> @NotNull PageView<T> view(@NotNull Collection<T> entries, @NotNull java.util.function.Function<T, GuiItem> renderer) {
+        return new PageView<>(this, entries, renderer);
+    }
+
     public @NotNull PaginatedGui pageControls() {
         return pageControls(false);
     }
