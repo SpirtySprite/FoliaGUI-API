@@ -193,6 +193,29 @@ gui.openLastPage();        // or jump to whatever the last page turns out to be
 gui.promptJumpToPage(player); // ask via chat for a page number and jump there
 ```
 
+Instead of wiring arrows by hand, let the GUI place themed controls: previous in the first column of the
+bottom row, a page indicator in the middle and next in the last column. Unavailable arrows show the
+theme filler, and the controls are only rebuilt when the page or the page count changes:
+
+```java
+PaginatedGui gui = PaginatedGui.builder().rows(6).title("&8Shop").pageControls(true).create();
+gui.pageControls(previousSlot, indicatorSlot, nextSlot); // or pick the slots yourself
+gui.hideUnavailableControls(false);                        // always show both arrows
+```
+
+### Filtering and sorting pages
+
+`view(...)` turns a list of your own objects into pages and lets you filter and sort without rebuilding
+the menu. Only the items on the visible page are rendered:
+
+```java
+PageView<Listing> view = gui.view(listings, listing -> listing.icon());
+view.filter(listing -> listing.price() <= budget);
+view.sort(Comparator.comparingDouble(Listing::price));
+view.entries(freshListings);   // swap the data, keeps the filter and sort
+view.filter(null);             // clear the filter
+```
+
 ### Searchable paginated GUI
 
 `SearchablePaginatedGui` keeps a master list of items separate from what's currently displayed, so it can filter down to whatever matches a search term:
@@ -310,6 +333,10 @@ item.requirePermission("myplugin.use", denied ->
         denied.sendMessage("You don't have permission for that."));
 ```
 
+Cooldowns are tracked per player, so a shared item such as a close button reused across menus never
+blocks one player because another one clicked it. `remainingCooldownMillis(uuid)` tells you how long is
+left.
+
 ### Confirmation and alert dialogs
 
 A ready-made yes/no menu:
@@ -325,6 +352,9 @@ Confirmation.builder()
         .expireAfter(20 * 10, player -> player.sendMessage("&cTimed out.")) // optional, in ticks
         .open(player);
 ```
+
+A confirmation runs `onConfirm` or `onCancel` exactly once, even if the player double clicks before the
+menu closes, so it is safe in front of purchases.
 
 `Alert` is the single-button counterpart, for a message that just needs acknowledging rather than a choice:
 
@@ -350,6 +380,29 @@ AsyncContent.load(gui, player,
             }
             gui.update();
         });
+```
+
+While loading, the centre slot shows the theme's loading item. If the fetch throws, the failure is logged,
+the centre slot shows the theme's error item and the optional error callback runs:
+
+```java
+AsyncContent.load(gui, player, this::fetch, this::render, failure -> player.sendMessage("Try again later."));
+AsyncContent.loadPages(paginatedGui, player, () -> database.listings(), Listing::icon);
+```
+
+### Quantity picker
+
+A ready made amount selector with -64, -10, -1, +1, +10, +64, a live preview and confirm or cancel:
+
+```java
+QuantityGui.builder()
+        .title("&8How many?")
+        .display(new ItemStack(Material.DIAMOND))
+        .range(1, 256)
+        .initial(1)
+        .description(amount -> List.of("&7Price: &6" + amount * 50))
+        .onConfirm(amount -> buy(player, amount))
+        .open(player);
 ```
 
 ### Anvil text input
@@ -438,6 +491,8 @@ Vanilla trading mechanics (taking ingredients, giving the result) run exactly as
 ```java
 GuiNavigator.open(player, nextMenu); // pushes the player's current GUI, then opens nextMenu
 GuiNavigator.back(player);            // pops one level and reopens it, returns false if there's nothing to pop
+GuiNavigator.backOrClose(player);     // back, or close when there is no history
+GuiNavigator.maxDepth(16);            // history is bounded (32 by default) and never stores a menu twice
 ```
 
 `GuiTheme` bundles the border, back button, and close button most menus repeat, so you configure the look once:
@@ -450,6 +505,19 @@ Gui gui = Gui.builder().rows(3).title("&8Menu").create();
 THEME.applyBorder(gui);
 gui.setItem(3, 1, THEME.backButton());       // wired to GuiNavigator.back
 gui.setItem(3, 9, THEME.closeButton(gui));   // closes this exact GUI
+```
+
+Set a theme once for the whole library with `FoliaGUI.theme(THEME)`. The theme also provides the filler,
+the previous and next buttons, the page indicator, the loading and error items and four sounds
+(`click`, `success`, `deny`, `page`, each replaceable or `null` to mute):
+
+```java
+FoliaGUI.theme(new GuiTheme()
+        .filler(() -> ItemBuilder.of(Material.PURPLE_STAINED_GLASS_PANE).name(" ").asGuiItem())
+        .pageIndicator(gui -> ItemBuilder.of(Material.BOOK).nameAny("<gold>Page " + gui.getCurrentPage()).asGuiItem())
+        .clickSound(new GuiTheme.ThemeSound(Sound.UI_BUTTON_CLICK, 0.4f, 1.5f)));
+
+FoliaGUI.theme().success(player);
 ```
 
 ### Animation and auto-refresh
@@ -468,6 +536,13 @@ The animation stops itself automatically once the player is no longer viewing th
 
 ```java
 gui.setUpdateInterval(20); // rebuild the inventory from the item map once a second while it's open
+```
+
+To change content on that same schedule, give the GUI a tick action. It runs on the viewer's thread before
+each refresh, and a failing action is logged instead of stopping the refresh:
+
+```java
+gui.onTick(20, g -> g.updateItem(4, countdownItem()));
 ```
 
 ### Cycling items
@@ -670,6 +745,15 @@ Component label = Text.label("&aHello"); // also disables the default item-name 
 String backToLegacy = Text.toLegacy(fromMini);
 
 Component templated = Text.of("&aHello, {player}!", Map.of("player", player.getName()));
+```
+
+`Text.parse` accepts legacy codes (`&a`, `§a`, `&#rrggbb`, `§x§r§r§g§g§b§b`) and MiniMessage in the same
+string, and the item builder has matching `nameAny` and `loreAny`:
+
+```java
+Component mixed = Text.parse("&6Gold <gradient:#f00:#00f>and gradient</gradient>");
+ItemBuilder.of(Material.NETHER_STAR).nameAny("&d&lNexus <gray>Star").loreAny("&7Line one", "<aqua>Line two");
+String safe = Text.escape(playerInput); // cannot inject tags
 ```
 
 ### Force-open dialogs
