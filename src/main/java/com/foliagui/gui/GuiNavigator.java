@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class GuiNavigator {
 
     private static final Map<UUID, Deque<BaseGui>> HISTORY = new ConcurrentHashMap<>();
+    private static volatile int maxDepth = 32;
 
     private GuiNavigator() {
     }
@@ -19,18 +20,45 @@ public final class GuiNavigator {
     public static void open(@NotNull HumanEntity player, @NotNull BaseGui next) {
         BaseGui current = GuiManager.getOpenGui(player);
         if (current != null && current != next) {
-            HISTORY.computeIfAbsent(player.getUniqueId(), key -> new ArrayDeque<>()).push(current);
+            HISTORY.compute(player.getUniqueId(), (key, stack) -> {
+                Deque<BaseGui> history = stack == null ? new ArrayDeque<>() : stack;
+                history.remove(next);
+                history.remove(current);
+                history.push(current);
+                while (history.size() > maxDepth) {
+                    history.removeLast();
+                }
+                return history;
+            });
         }
         next.open(player);
     }
 
-    public static boolean back(@NotNull HumanEntity player) {
+    public static void maxDepth(int depth) {
+        maxDepth = Math.max(1, depth);
+    }
+
+    public static int depth(@NotNull HumanEntity player) {
         Deque<BaseGui> stack = HISTORY.get(player.getUniqueId());
-        if (stack == null || stack.isEmpty()) {
+        return stack == null ? 0 : stack.size();
+    }
+
+    public static void backOrClose(@NotNull HumanEntity player) {
+        if (!back(player)) {
+            player.closeInventory();
+        }
+    }
+
+    public static boolean back(@NotNull HumanEntity player) {
+        BaseGui[] previous = {null};
+        HISTORY.computeIfPresent(player.getUniqueId(), (key, stack) -> {
+            previous[0] = stack.poll();
+            return stack.isEmpty() ? null : stack;
+        });
+        if (previous[0] == null) {
             return false;
         }
-        BaseGui previous = stack.pop();
-        previous.open(player);
+        previous[0].open(player);
         return true;
     }
 

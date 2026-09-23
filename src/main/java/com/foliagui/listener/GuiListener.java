@@ -57,7 +57,7 @@ public final class GuiListener implements Listener {
             }
             run(gui.getSlotAction(event.getSlot()), event);
             if (item != null) {
-                if (item.tryClick()) {
+                if (item.tryClick(event.getWhoClicked().getUniqueId())) {
                     run(item.getAction(), event);
                     if (item.getClickSound() != null && event.getWhoClicked() instanceof Player player) {
                         player.playSound(player.getLocation(), item.getClickSound(),
