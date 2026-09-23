@@ -108,6 +108,18 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return (B) this;
     }
 
+    public @NotNull B nameAny(@NotNull String anyFormat) {
+        return name(Text.parse(anyFormat));
+    }
+
+    public @NotNull B loreAny(@NotNull String... lines) {
+        return loreComponents(Text.parseList(java.util.Arrays.asList(lines)));
+    }
+
+    public @NotNull B loreAny(@NotNull List<String> lines) {
+        return loreComponents(Text.parseList(lines));
+    }
+
     public @NotNull B amount(int amount) {
         itemStack.setAmount(Math.max(1, amount));
         return (B) this;

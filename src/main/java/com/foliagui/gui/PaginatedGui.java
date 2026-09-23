@@ -1,5 +1,6 @@
 package com.foliagui.gui;
 
+import com.foliagui.FoliaGUI;
 import com.foliagui.builder.gui.PaginatedGuiBuilder;
 import com.foliagui.item.GuiItem;
 import com.foliagui.util.Text;
@@ -29,6 +30,11 @@ public class PaginatedGui extends BaseGui {
     private volatile int pageSize;
     private volatile int suppliedItemCount;
     private volatile IntFunction<GuiItem> pageItemSupplier;
+    private volatile int previousSlot = -1;
+    private volatile int indicatorSlot = -1;
+    private volatile int nextSlot = -1;
+    private volatile boolean hideUnavailableControls = true;
+    private volatile long renderedControlState = Long.MIN_VALUE;
 
     public PaginatedGui(int rows, @NotNull Component title, int pageSize) {
         super(rows, title);
@@ -84,6 +90,81 @@ public class PaginatedGui extends BaseGui {
         pageItemSupplier = Objects.requireNonNull(supplier, "supplier cannot be null");
         pageNum.set(0);
         return this;
+    }
+
+    public <T> @NotNull PageView<T> view(@NotNull Collection<T> entries, @NotNull java.util.function.Function<T, GuiItem> renderer) {
+        return new PageView<>(this, entries, renderer);
+    }
+
+    public @NotNull PaginatedGui pageControls() {
+        return pageControls(false);
+    }
+
+    public @NotNull PaginatedGui pageControls(boolean fillRow) {
+        int row = getRows() > 0 ? getRows() : 1;
+        pageControls(com.foliagui.util.Slot.of(row, 1), com.foliagui.util.Slot.of(row, 5),
+                com.foliagui.util.Slot.of(row, 9));
+        if (fillRow && getRows() > 0) {
+            filler().fillRow(row, FoliaGUI.theme().filler());
+        }
+        return this;
+    }
+
+    public @NotNull PaginatedGui pageControls(int previousSlot, int indicatorSlot, int nextSlot) {
+        validateControl(previousSlot);
+        validateControl(indicatorSlot);
+        validateControl(nextSlot);
+        this.previousSlot = previousSlot;
+        this.indicatorSlot = indicatorSlot;
+        this.nextSlot = nextSlot;
+        GuiItem placeholder = FoliaGUI.theme().filler();
+        for (int slot : new int[]{previousSlot, indicatorSlot, nextSlot}) {
+            if (slot >= 0) {
+                setItem(slot, placeholder);
+            }
+        }
+        renderedControlState = Long.MIN_VALUE;
+        return this;
+    }
+
+    public @NotNull PaginatedGui hideUnavailableControls(boolean hide) {
+        this.hideUnavailableControls = hide;
+        renderedControlState = Long.MIN_VALUE;
+        return this;
+    }
+
+    public boolean hasPageControls() {
+        return previousSlot >= 0 || indicatorSlot >= 0 || nextSlot >= 0;
+    }
+
+    private void validateControl(int slot) {
+        if (slot >= 0) {
+            validateSlot(slot);
+        }
+    }
+
+    private void renderControls() {
+        if (!hasPageControls()) {
+            return;
+        }
+        int page = pageNum.get();
+        int pages = getPagesCount();
+        long state = ((long) page << 32) | (pages & 0xffffffffL);
+        if (state == renderedControlState) {
+            return;
+        }
+        renderedControlState = state;
+        GuiTheme theme = FoliaGUI.theme();
+        Map<Integer, GuiItem> items = getGuiItems();
+        if (previousSlot >= 0) {
+            items.put(previousSlot, hasPrevious() || !hideUnavailableControls ? theme.previousButton(this) : theme.filler());
+        }
+        if (indicatorSlot >= 0) {
+            items.put(indicatorSlot, theme.pageIndicator(this));
+        }
+        if (nextSlot >= 0) {
+            items.put(nextSlot, hasNext() || !hideUnavailableControls ? theme.nextButton(this) : theme.filler());
+        }
     }
 
     public @NotNull PaginatedGui setPageSize(int pageSize) {
@@ -161,6 +242,7 @@ public class PaginatedGui extends BaseGui {
 
     @Override
     protected void populateInventory() {
+        renderControls();
         List<Integer> slots = pageSlots();
         boolean[] pagedSlots = new boolean[getSize()];
         for (int slot : slots) {
@@ -221,7 +303,9 @@ public class PaginatedGui extends BaseGui {
     private @Nullable GuiItem pageItem(int index) {
         IntFunction<GuiItem> supplier = pageItemSupplier;
         if (supplier == null) {
-            return pageItems.get(index);
+            synchronized (pageItems) {
+                return index < pageItems.size() ? pageItems.get(index) : null;
+            }
         }
         return suppliedItems.computeIfAbsent(index, supplier::apply);
     }

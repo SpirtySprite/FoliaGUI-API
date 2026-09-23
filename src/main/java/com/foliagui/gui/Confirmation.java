@@ -67,19 +67,28 @@ public final class Confirmation {
             Gui gui = Gui.of(3, title);
             gui.filler().fill(ItemBuilder.of(Material.GRAY_STAINED_GLASS_PANE).name(" ").asGuiItem());
 
-            confirmItem.setAction(event -> {
+            java.util.concurrent.atomic.AtomicBoolean decided = new java.util.concurrent.atomic.AtomicBoolean();
+            GuiItem confirm = confirmItem.withItemStack(confirmItem.getItemStack());
+            GuiItem cancel = cancelItem.withItemStack(cancelItem.getItemStack());
+            confirm.setAction(event -> {
                 Player player = (Player) event.getWhoClicked();
+                if (!decided.compareAndSet(false, true)) {
+                    return;
+                }
                 gui.close(player);
                 onConfirm.accept(player);
             });
-            cancelItem.setAction(event -> {
+            cancel.setAction(event -> {
                 Player player = (Player) event.getWhoClicked();
+                if (!decided.compareAndSet(false, true)) {
+                    return;
+                }
                 gui.close(player);
                 onCancel.accept(player);
             });
 
-            gui.setItem(2, 3, confirmItem);
-            gui.setItem(2, 7, cancelItem);
+            gui.setItem(2, 3, confirm);
+            gui.setItem(2, 7, cancel);
             return gui;
         }
 

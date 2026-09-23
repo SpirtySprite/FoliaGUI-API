@@ -4,6 +4,7 @@ import com.foliagui.gui.AnvilGui;
 import com.foliagui.gui.ChatPrompt;
 import com.foliagui.gui.GuiManager;
 import com.foliagui.gui.GuiNavigator;
+import com.foliagui.gui.GuiTheme;
 import com.foliagui.gui.MerchantGui;
 import com.foliagui.gui.SignGui;
 import com.foliagui.listener.GuiListener;
@@ -31,6 +32,7 @@ public final class FoliaGUI {
     private static volatile Scheduler scheduler;
     private static volatile NamespacedKey itemKey;
     private static volatile boolean initialised;
+    private static volatile GuiTheme theme = new GuiTheme();
     private static Listener registeredListener;
     private static FoliaGUIService registeredService;
 
@@ -92,6 +94,17 @@ public final class FoliaGUI {
         registeredListener = null;
         registeredService = null;
         initialised = false;
+    }
+
+    public static @NotNull GuiTheme theme() {
+        return theme;
+    }
+
+    public static void theme(@NotNull GuiTheme replacement) {
+        if (replacement == null) {
+            throw new IllegalArgumentException("theme cannot be null");
+        }
+        theme = replacement;
     }
 
     public static boolean isInitialised() {

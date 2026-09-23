@@ -25,7 +25,9 @@ public final class GuiItem {
     private float clickVolume = 1.0f;
     private float clickPitch = 1.0f;
     private volatile long cooldownMillis;
-    private final java.util.concurrent.atomic.AtomicLong lastClickMillis = new java.util.concurrent.atomic.AtomicLong();
+    private static final UUID SHARED_CLICKER = new UUID(0L, 0L);
+    private static final int COOLDOWN_PRUNE_THRESHOLD = 256;
+    private final java.util.Map<UUID, Long> lastClicks = new java.util.concurrent.ConcurrentHashMap<>();
     private volatile boolean editable;
     private GuiAction<InventoryClickEvent> leftClickAction;
     private GuiAction<InventoryClickEvent> rightClickAction;
@@ -97,7 +99,7 @@ public final class GuiItem {
         copy.clickVolume = clickVolume;
         copy.clickPitch = clickPitch;
         copy.cooldownMillis = cooldownMillis;
-        copy.lastClickMillis.set(lastClickMillis.get());
+        copy.lastClicks.putAll(lastClicks);
         copy.editable = editable;
         copy.leftClickAction = leftClickAction;
         copy.rightClickAction = rightClickAction;
@@ -210,16 +212,36 @@ public final class GuiItem {
 
     @ApiStatus.Internal
     public boolean tryClick() {
-        if (cooldownMillis <= 0) {
+        return tryClick(SHARED_CLICKER);
+    }
+
+    @ApiStatus.Internal
+    public boolean tryClick(@NotNull UUID clicker) {
+        long cooldown = cooldownMillis;
+        if (cooldown <= 0) {
             return true;
         }
         long now = System.currentTimeMillis();
-        long last = lastClickMillis.get();
-        if (now - last < cooldownMillis) {
-            return false;
+        boolean[] allowed = {false};
+        lastClicks.compute(clicker, (key, last) -> {
+            if (last != null && now - last < cooldown) {
+                return last;
+            }
+            allowed[0] = true;
+            return now;
+        });
+        if (lastClicks.size() > COOLDOWN_PRUNE_THRESHOLD) {
+            lastClicks.values().removeIf(last -> now - last >= cooldown);
         }
-        lastClickMillis.set(now);
-        return true;
+        return allowed[0];
+    }
+
+    public long remainingCooldownMillis(@NotNull UUID clicker) {
+        Long last = lastClicks.get(clicker);
+        if (last == null || cooldownMillis <= 0) {
+            return 0L;
+        }
+        return Math.max(0L, cooldownMillis - (System.currentTimeMillis() - last));
     }
 
     public @NotNull GuiItem editable(boolean editable) {

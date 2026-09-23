@@ -57,6 +57,7 @@ public abstract class BaseGui implements InventoryHolder {
     private volatile boolean updating;
 
     private volatile long updateIntervalTicks;
+    private volatile java.util.function.Consumer<BaseGui> tickAction;
     private final Map<UUID, com.foliagui.scheduler.TaskHandle> updateTasks = new ConcurrentHashMap<>();
 
     private volatile boolean forceOpen;
@@ -230,6 +231,23 @@ public abstract class BaseGui implements InventoryHolder {
         return updateIntervalTicks;
     }
 
+    public @NotNull BaseGui onTick(long ticks, @NotNull java.util.function.Consumer<BaseGui> action) {
+        this.tickAction = Objects.requireNonNull(action, "action cannot be null");
+        return setUpdateInterval(ticks);
+    }
+
+    private void tick() {
+        java.util.function.Consumer<BaseGui> action = tickAction;
+        if (action != null) {
+            try {
+                action.accept(this);
+            } catch (RuntimeException failure) {
+                LOGGER.log(java.util.logging.Level.WARNING, "GUI tick action failed", failure);
+            }
+        }
+        populateInventory();
+    }
+
     @ApiStatus.Internal
     public void startAutoUpdate(@NotNull HumanEntity player) {
         if (updateIntervalTicks <= 0) {
@@ -237,7 +255,7 @@ public abstract class BaseGui implements InventoryHolder {
         }
         stopAutoUpdate(player);
         com.foliagui.scheduler.TaskHandle handle = FoliaGUI.scheduler().runForEntityTimer(
-                player, this::populateInventory, () -> stopAutoUpdate(player),
+                player, this::tick, () -> stopAutoUpdate(player),
                 updateIntervalTicks, updateIntervalTicks);
         updateTasks.put(player.getUniqueId(), handle);
     }

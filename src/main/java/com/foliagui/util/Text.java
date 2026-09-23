@@ -51,6 +51,27 @@ public final class Text {
         return parsed.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
     }
 
+    @Contract("null -> null; !null -> !null")
+    public static @Nullable Component parse(@Nullable String anyFormat) {
+        if (anyFormat == null) {
+            return null;
+        }
+        return MINI.deserialize(Legacy.toMini(anyFormat))
+                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
+    }
+
+    public static @NotNull List<Component> parseList(@NotNull List<String> lines) {
+        return lines.stream().map(Text::parse).collect(Collectors.toList());
+    }
+
+    public static @NotNull String plain(@NotNull Component component) {
+        return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(component);
+    }
+
+    public static @NotNull String escape(@NotNull String value) {
+        return MINI.escapeTags(value);
+    }
+
     public static @NotNull String toLegacy(@NotNull Component component) {
         return SECTION.serialize(component);
     }
