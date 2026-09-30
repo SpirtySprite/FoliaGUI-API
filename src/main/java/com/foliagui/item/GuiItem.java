@@ -1,6 +1,5 @@
 package com.foliagui.item;
 
-import com.foliagui.FoliaGUI;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -17,6 +16,9 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 public final class GuiItem {
+
+    public static final org.bukkit.NamespacedKey IDENTITY_KEY =
+            java.util.Objects.requireNonNull(org.bukkit.NamespacedKey.fromString("foliagui:item"));
 
     private volatile UUID uuid;
     private ItemStack itemStack;
@@ -63,7 +65,7 @@ public final class GuiItem {
     private ItemStack stamp(@NotNull ItemStack stack, @NotNull UUID identity) {
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
-            meta.getPersistentDataContainer().set(FoliaGUI.itemKey(), PersistentDataType.STRING, identity.toString());
+            meta.getPersistentDataContainer().set(IDENTITY_KEY, PersistentDataType.STRING, identity.toString());
             stack.setItemMeta(meta);
         }
         return stack;
@@ -261,7 +263,7 @@ public final class GuiItem {
         if (meta == null) {
             return null;
         }
-        String raw = meta.getPersistentDataContainer().get(FoliaGUI.itemKey(), PersistentDataType.STRING);
+        String raw = meta.getPersistentDataContainer().get(IDENTITY_KEY, PersistentDataType.STRING);
         if (raw == null) {
             return null;
         }

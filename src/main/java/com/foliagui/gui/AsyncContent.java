@@ -1,6 +1,5 @@
 package com.foliagui.gui;
 
-import com.foliagui.FoliaGUI;
 import com.foliagui.item.GuiItem;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -30,18 +29,18 @@ public final class AsyncContent {
         int loadingSlot = centre(gui);
         boolean showLoading = gui.getGuiItem(loadingSlot) == null;
         if (showLoading) {
-            gui.setItem(loadingSlot, FoliaGUI.theme().loading());
+            gui.setItem(loadingSlot, gui.service().theme().loading());
         }
         gui.open(player);
-        FoliaGUI.scheduler().runAsync(() -> {
+        gui.service().scheduler().runAsync(() -> {
             T result;
             try {
                 result = fetch.get();
             } catch (Throwable failure) {
                 LOGGER.log(Level.WARNING, "Async GUI content failed to load", failure);
-                FoliaGUI.scheduler().runForEntity(player, () -> {
+                gui.service().scheduler().runForEntity(player, () -> {
                     if (showLoading) {
-                        gui.setItem(loadingSlot, FoliaGUI.theme().loadFailed());
+                        gui.setItem(loadingSlot, gui.service().theme().loadFailed());
                         gui.update();
                     }
                     if (onError != null) {
@@ -50,7 +49,7 @@ public final class AsyncContent {
                 }, null);
                 return;
             }
-            FoliaGUI.scheduler().runForEntity(player, () -> {
+            gui.service().scheduler().runForEntity(player, () -> {
                 if (showLoading) {
                     gui.removeItem(loadingSlot);
                 }

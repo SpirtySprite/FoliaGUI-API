@@ -1,6 +1,7 @@
 package com.foliagui.gui;
 
 import com.foliagui.FoliaGUI;
+import com.foliagui.FoliaGUIService;
 import com.foliagui.util.Text;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -24,14 +25,14 @@ public final class MerchantGui {
 
     private static final int RESULT_SLOT = 2;
 
-    private static final SessionRegistry<MerchantGui> SESSIONS = new SessionRegistry<>();
-
+    private final FoliaGUIService service;
     private final Component title;
     private final List<MerchantRecipe> recipes;
     private final BiConsumer<Player, MerchantRecipe> onTrade;
     private final Consumer<Player> onClose;
 
     private MerchantGui(Builder builder) {
+        this.service = builder.service;
         this.title = builder.title;
         this.recipes = builder.recipes;
         this.onTrade = builder.onTrade;
@@ -43,21 +44,30 @@ public final class MerchantGui {
     }
 
     public static boolean hasSession(@NotNull HumanEntity player) {
-        return SESSIONS.has(player);
+        return FoliaGUI.isInitialised() && hasSession(FoliaGUI.service(), player);
+    }
+
+    public static boolean hasSession(@NotNull FoliaGUIService service, @NotNull HumanEntity player) {
+        return service.sessions().merchant.has(player);
+    }
+
+    private @NotNull FoliaGUIService service() {
+        return service != null ? service : FoliaGUI.service();
     }
 
     public void open(@NotNull Player player) {
-        FoliaGUI.scheduler().runForEntity(player, () -> {
+        FoliaGUIService owner = service();
+        owner.scheduler().runForEntity(player, () -> {
             Merchant merchant = Bukkit.createMerchant(title);
             merchant.setRecipes(recipes);
             player.openMerchant(merchant, true);
-            SESSIONS.put(player, this);
+            owner.sessions().merchant.put(player, this);
         }, null);
     }
 
     @ApiStatus.Internal
-    public static boolean handleClick(@NotNull InventoryClickEvent event) {
-        MerchantGui gui = SESSIONS.get(event.getWhoClicked());
+    public static boolean handleClick(@NotNull FoliaGUIService service, @NotNull InventoryClickEvent event) {
+        MerchantGui gui = service.sessions().merchant.get(event.getWhoClicked());
         if (gui == null || !(event.getInventory() instanceof MerchantInventory merchantInventory)) {
             return false;
         }
@@ -66,19 +76,21 @@ public final class MerchantGui {
             MerchantRecipe recipe = merchantInventory.getSelectedRecipe();
             if (recipe != null) {
                 Player player = (Player) event.getWhoClicked();
-                FoliaGUI.scheduler().runForEntity(player, () -> gui.onTrade.accept(player, recipe), null);
+                service.scheduler().runForEntity(player, () -> gui.onTrade.accept(player, recipe), null);
             }
         }
         return true;
     }
 
     public static void clearSessions() {
-        SESSIONS.clear();
+        if (FoliaGUI.isInitialised()) {
+            FoliaGUI.service().sessions().merchant.clear();
+        }
     }
 
     @ApiStatus.Internal
-    public static boolean handleClose(@NotNull InventoryCloseEvent event) {
-        MerchantGui gui = SESSIONS.remove(event.getPlayer());
+    public static boolean handleClose(@NotNull FoliaGUIService service, @NotNull InventoryCloseEvent event) {
+        MerchantGui gui = service.sessions().merchant.remove(event.getPlayer());
         if (gui == null) {
             return false;
         }
@@ -89,6 +101,13 @@ public final class MerchantGui {
     }
 
     public static final class Builder {
+        private FoliaGUIService service;
+
+        public @NotNull Builder service(@NotNull FoliaGUIService service) {
+            this.service = service;
+            return this;
+        }
+
         private Component title = Component.empty();
         private final List<MerchantRecipe> recipes = new ArrayList<>();
         private BiConsumer<Player, MerchantRecipe> onTrade;

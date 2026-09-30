@@ -1,6 +1,7 @@
 package com.foliagui.gui;
 
 import com.foliagui.FoliaGUI;
+import com.foliagui.FoliaGUIService;
 import com.foliagui.item.GuiAction;
 import com.foliagui.item.GuiItem;
 import com.foliagui.util.Slot;
@@ -60,6 +61,8 @@ public abstract class BaseGui implements InventoryHolder {
     private volatile java.util.function.Consumer<BaseGui> tickAction;
     private final Map<UUID, com.foliagui.scheduler.TaskHandle> updateTasks = new ConcurrentHashMap<>();
 
+    private volatile FoliaGUIService service;
+
     private volatile boolean forceOpen;
     private final Set<UUID> allowedCloses = ConcurrentHashMap.newKeySet();
 
@@ -87,6 +90,28 @@ public abstract class BaseGui implements InventoryHolder {
         this.inventory = Bukkit.createInventory(this, guiType.getInventoryType(), title);
         this.renderedItems = new GuiItem[size];
         this.renderedStacks = new ItemStack[size];
+    }
+
+    /** The service this GUI belongs to: the one set with {@link #service(FoliaGUIService)}, else the default. */
+    public @NotNull FoliaGUIService service() {
+        FoliaGUIService bound = service;
+        return bound != null ? bound : FoliaGUI.service();
+    }
+
+    /** True when {@code candidate} is the service this GUI is bound to, explicitly or by default. */
+    @ApiStatus.Internal
+    public boolean belongsTo(@NotNull FoliaGUIService candidate) {
+        FoliaGUIService bound = service;
+        if (bound != null) {
+            return bound == candidate;
+        }
+        return FoliaGUI.isInitialised() && FoliaGUI.service() == candidate;
+    }
+
+    /** Binds this GUI to an explicit service. Call before the GUI is first opened. */
+    public @NotNull BaseGui service(@NotNull FoliaGUIService service) {
+        this.service = Objects.requireNonNull(service, "service cannot be null");
+        return this;
     }
 
     protected void populateInventory() {
@@ -198,7 +223,7 @@ public abstract class BaseGui implements InventoryHolder {
         if (player.isSleeping()) {
             return;
         }
-        FoliaGUI.scheduler().runForEntity(player, () -> {
+        service().scheduler().runForEntity(player, () -> {
             warnIfSharedWithAnotherViewer(player);
             populateInventory();
             player.openInventory(inventory);
@@ -219,7 +244,7 @@ public abstract class BaseGui implements InventoryHolder {
     public void close(@NotNull HumanEntity player) {
         Objects.requireNonNull(player, "player cannot be null");
         allowedCloses.add(player.getUniqueId());
-        FoliaGUI.scheduler().runForEntity(player, player::closeInventory, null);
+        service().scheduler().runForEntity(player, player::closeInventory, null);
     }
 
     public void update() {
@@ -258,7 +283,7 @@ public abstract class BaseGui implements InventoryHolder {
             return;
         }
         stopAutoUpdate(player);
-        com.foliagui.scheduler.TaskHandle handle = FoliaGUI.scheduler().runForEntityTimer(
+        com.foliagui.scheduler.TaskHandle handle = service().scheduler().runForEntityTimer(
                 player, this::tick, () -> stopAutoUpdate(player),
                 updateIntervalTicks, updateIntervalTicks);
         updateTasks.put(player.getUniqueId(), handle);
@@ -293,7 +318,7 @@ public abstract class BaseGui implements InventoryHolder {
 
     public void updateTitle(@NotNull Component title) {
         Objects.requireNonNull(title, "title cannot be null");
-        FoliaGUI.scheduler().runGlobal(() -> {
+        service().scheduler().runGlobal(() -> {
             this.title = title;
             List<HumanEntity> viewers = new ArrayList<>(inventory.getViewers());
             Inventory replacement = guiType == null
@@ -304,7 +329,7 @@ public abstract class BaseGui implements InventoryHolder {
             Arrays.fill(renderedStacks, null);
             populateInventory();
             for (HumanEntity viewer : viewers) {
-                FoliaGUI.scheduler().runForEntity(viewer, () -> {
+                service().scheduler().runForEntity(viewer, () -> {
                     updating = true;
                     try {
                         viewer.openInventory(replacement);
@@ -327,7 +352,7 @@ public abstract class BaseGui implements InventoryHolder {
             mutation.run();
             return;
         }
-        FoliaGUI.scheduler().runForEntity(viewer, mutation, null);
+        service().scheduler().runForEntity(viewer, mutation, null);
     }
 
     public @NotNull BaseGui addInteractionModifier(@NotNull InteractionModifier modifier) {
@@ -414,7 +439,7 @@ public abstract class BaseGui implements InventoryHolder {
     }
 
     public boolean isOpenFor(@NotNull HumanEntity player) {
-        return GuiManager.getOpenGui(player) == this;
+        return service().guis().getOpenGui(player) == this;
     }
 
     public @NotNull Component title() {

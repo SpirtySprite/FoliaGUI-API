@@ -1,5 +1,6 @@
 package com.foliagui.builder.gui;
 
+import com.foliagui.FoliaGUIService;
 import com.foliagui.gui.BaseGui;
 import com.foliagui.gui.InteractionModifier;
 import com.foliagui.item.GuiAction;
@@ -30,6 +31,13 @@ public abstract class BaseGuiBuilder<G extends BaseGui, B extends BaseGuiBuilder
     private GuiAction<InventoryOpenEvent> openAction;
     private GuiAction<InventoryCloseEvent> closeAction;
     private Consumer<G> postBuild;
+    private FoliaGUIService service;
+
+    /** Binds the built GUI to an explicit service instead of the default one. */
+    public @NotNull B service(@NotNull FoliaGUIService service) {
+        this.service = service;
+        return (B) this;
+    }
 
     public @NotNull B title(@NotNull String title) {
         this.title = Text.of(title);
@@ -96,6 +104,9 @@ public abstract class BaseGuiBuilder<G extends BaseGui, B extends BaseGuiBuilder
     }
 
     protected @NotNull G finish(@NotNull G gui) {
+        if (service != null) {
+            gui.service(service);
+        }
         if (clearModifiers) {
             gui.clearInteractionModifiers();
         }

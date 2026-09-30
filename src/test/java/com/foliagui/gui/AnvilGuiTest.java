@@ -50,7 +50,7 @@ class AnvilGuiTest {
     void handleCloseReturnsFalseWithoutAnActiveSession() {
         InventoryMock inventory = server.createInventory(null, 9);
         InventoryCloseEvent event = new InventoryCloseEvent(player.openInventory(inventory));
-        assertFalse(AnvilGui.handleClose(event));
+        assertFalse(AnvilGui.handleClose(FoliaGUI.service(), event));
     }
 
     @Test

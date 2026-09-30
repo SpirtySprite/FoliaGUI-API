@@ -1,6 +1,6 @@
 package com.foliagui.gui;
 
-import com.foliagui.FoliaGUI;
+import com.foliagui.FoliaGUIService;
 import com.foliagui.builder.item.ItemBuilder;
 import com.foliagui.item.GuiItem;
 import org.bukkit.Material;
@@ -19,6 +19,8 @@ public final class Confirmation {
     }
 
     public static final class Builder {
+        private FoliaGUIService service;
+
         private String title = "&8Are you sure?";
         private GuiItem confirmItem = ItemBuilder.of(Material.LIME_CONCRETE)
                 .name("&aConfirm").lore("&7Click to confirm").asGuiItem();
@@ -31,6 +33,11 @@ public final class Confirmation {
         private long expireTicks;
         private Consumer<Player> onExpire = player -> {
         };
+
+        public @NotNull Builder service(@NotNull FoliaGUIService service) {
+            this.service = service;
+            return this;
+        }
 
         public @NotNull Builder title(@NotNull String title) {
             this.title = title;
@@ -65,6 +72,9 @@ public final class Confirmation {
 
         public @NotNull Gui build() {
             Gui gui = Gui.of(3, title);
+            if (service != null) {
+                gui.service(service);
+            }
             gui.filler().fill(ItemBuilder.of(Material.GRAY_STAINED_GLASS_PANE).name(" ").asGuiItem());
 
             java.util.concurrent.atomic.AtomicBoolean decided = new java.util.concurrent.atomic.AtomicBoolean();
@@ -96,8 +106,8 @@ public final class Confirmation {
             Gui gui = build();
             gui.open(player);
             if (expireTicks > 0) {
-                FoliaGUI.scheduler().runForEntityLater(player, () -> {
-                    if (GuiManager.getOpenGui(player) == gui) {
+                gui.service().scheduler().runForEntityLater(player, () -> {
+                    if (gui.service().guis().getOpenGui(player) == gui) {
                         gui.close(player);
                         onExpire.accept(player);
                     }

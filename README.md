@@ -81,8 +81,8 @@ folia-supported: true
 
 This library ships no `plugin.yml`, so it needs to end up on your plugin's classpath somehow. Two options:
 
-1. **Shade it into your plugin jar** with the Maven Shade plugin. If you do this, relocate the `com.foliagui` package to something unique to your plugin (for example `com.yourplugin.libs.foliagui`). FoliaGUI keeps a small amount of process-wide state (the registered listener, the open-GUI registry). If two plugins on the same server both shade in an *unrelocated* copy, they will fight over that state and one of them will end up initialised against the wrong plugin instance.
-2. **Ship it as its own library plugin** that calls `FoliaGUI.init(this)` in its `onEnable`, and have your other plugins depend on it via `depend` or `softdepend` in their own `plugin.yml`.
+1. **Shade it into your plugin jar** with the Maven Shade plugin. Relocating `com.foliagui` to a package of your own (for example `com.yourplugin.libs.foliagui`) is still good practice so your copy never clashes with another version of the library on the server. All runtime state lives in a `FoliaGUIService` instance that belongs to your plugin, so two plugins that shade the library do not share open GUIs, history, sessions or theme.
+2. **Ship it as its own library plugin** that other plugins depend on. Each dependent plugin should create its own service with `FoliaGUI.create(this)` (see [Lifecycle](#lifecycle)), so its GUIs are scheduled under its own plugin and stop when it is disabled.
 
 ## Quick start
 
@@ -783,18 +783,51 @@ Closing the dialog through your own code (`gui.close(player)`, which is exactly 
 
 ## Lifecycle
 
+There are two ways to run the library. Both give you the same API.
+
+**Default service** (one line, fine for a single plugin):
+
 ```java
 FoliaGUI.init(this);          // once, in onEnable
 FoliaGUI.isInitialised();     // true after a successful init
-FoliaGUI.shutdown();          // closes every open GUI, clears all registries, unregisters the listener
+FoliaGUI.service();           // the default FoliaGUIService
+FoliaGUI.shutdown();          // closes every open GUI, clears all state, unregisters the listener
 String version = FoliaGUI.VERSION; // the library's own version, read from its packaged POM
 ```
 
-`shutdown()` exists so a plugin reload framework (or a test suite) can tear the library down cleanly and call `init()` again afterwards, rather than being stuck with a permanently-initialised singleton.
+GUIs you create without naming a service use this default one. If a second plugin calls `init` while a default already exists, the call is ignored and a warning is logged.
 
-Calling almost anything in this library before `init` (or after `shutdown`) throws `FoliaGUINotInitialisedException`, a descriptive subclass of `IllegalStateException`, instead of a bare, unexplained one.
+**Your own service** (recommended for libraries and for plugins that may share a server with other users of FoliaGUI):
 
-If you would rather look the running instance up as a service than depend on the static class directly:
+```java
+public final class MyPlugin extends JavaPlugin {
+
+    private FoliaGUIService gui;
+
+    @Override
+    public void onEnable() {
+        gui = FoliaGUI.create(this);
+    }
+
+    @Override
+    public void onDisable() {
+        gui.close();
+    }
+
+    void openMenu(Player player) {
+        Gui menu = Gui.builder().service(gui).rows(3).title("&8Menu").create();
+        menu.open(player);
+    }
+}
+```
+
+A service owns everything the library remembers at runtime: the GUIs each player has open (`service.guis()`), back-navigation history (`service.navigation()`), anvil, sign, merchant and chat-prompt sessions, the theme (`service.theme()`), and the event listener. Bind a GUI to a service with `builder.service(service)` or `gui.service(service)` before opening it. `Confirmation`, `QuantityGui`, `AnvilGui`, `SignGui` and `MerchantGui` builders take `.service(service)` too, and chat prompts have `ChatPrompt.ask(service, player, ...)`.
+
+`close()` (and `FoliaGUI.shutdown()` for the default) exists so a plugin reload framework, or a test suite, can tear everything down cleanly. Using the default service before `init` or after `shutdown` throws `FoliaGUINotInitialisedException`, a descriptive subclass of `IllegalStateException`. A service you created yourself has no such dependency on the default, so GUIs bound to it keep working whether or not a default exists.
+
+The static helpers `GuiManager` and `GuiNavigator` are shortcuts over the default service. For an explicit service use `service.guis()` and `service.navigation()`.
+
+You can also look a running service up through Bukkit's service manager:
 
 ```java
 FoliaGUIService service = Bukkit.getServicesManager().load(FoliaGUIService.class);
@@ -812,6 +845,7 @@ FoliaGUIService service = Bukkit.getServicesManager().load(FoliaGUIService.class
 | Package | Contents |
 |---|---|
 | `com.foliagui` | `FoliaGUI` entry point, `FoliaGUIService`, `FoliaGUINotInitialisedException` |
+| `com.foliagui.internal` | Implementation of the service. Not public API. |
 | `com.foliagui.gui` | `BaseGui`, `Gui`, `PaginatedGui`, `SearchablePaginatedGui`, `ScrollingGui`, `StorageGui`, `AnvilGui`, `SignGui`, `MerchantGui`, `ChatPrompt`, `Confirmation`, `Alert`, `AsyncContent`, `GuiManager`, `GuiNavigator`, `GuiTheme`, `CycleItem`, `GuiType`, `ScrollType`, `InteractionModifier`, `GuiFiller` |
 | `com.foliagui.item` | `GuiItem`, `GuiAction` |
 | `com.foliagui.event` | `GuiOpenEvent`, `GuiClickEvent`, `GuiCloseEvent` |

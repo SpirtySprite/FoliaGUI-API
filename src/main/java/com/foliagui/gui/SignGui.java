@@ -1,6 +1,7 @@
 package com.foliagui.gui;
 
 import com.foliagui.FoliaGUI;
+import com.foliagui.FoliaGUIService;
 import com.foliagui.scheduler.TaskHandle;
 import com.foliagui.util.Text;
 import io.papermc.paper.event.packet.UncheckedSignChangeEvent;
@@ -26,8 +27,7 @@ public final class SignGui {
     private static final Side SIDE = Side.FRONT;
     private static final BlockData SIGN_BLOCK = Material.OAK_SIGN.createBlockData();
 
-    private static final SessionRegistry<SignGui> SESSIONS = new SessionRegistry<>();
-
+    private final FoliaGUIService service;
     private final List<Component> lines;
     private final List<String> initialText;
     private final Function<Player, Location> position;
@@ -39,6 +39,7 @@ public final class SignGui {
     private volatile TaskHandle timeoutTask;
 
     private SignGui(Builder builder) {
+        this.service = builder.service;
         this.lines = builder.lines;
         this.initialText = builder.lines.stream()
                 .map(PlainTextComponentSerializer.plainText()::serialize)
@@ -53,24 +54,40 @@ public final class SignGui {
     }
 
     public static boolean hasSession(@NotNull HumanEntity player) {
-        return SESSIONS.has(player);
+        return FoliaGUI.isInitialised() && hasSession(FoliaGUI.service(), player);
+    }
+
+    public static boolean hasSession(@NotNull FoliaGUIService service, @NotNull HumanEntity player) {
+        return service.sessions().sign.has(player);
+    }
+
+    private @NotNull FoliaGUIService service() {
+        return service != null ? service : FoliaGUI.service();
+    }
+
+    void cancelTimeout() {
+        TaskHandle pending = timeoutTask;
+        if (pending != null) {
+            pending.cancel();
+        }
     }
 
     public void open(@NotNull Player player) {
-        FoliaGUI.scheduler().runForEntity(player, () -> {
+        FoliaGUIService owner = service();
+        owner.scheduler().runForEntity(player, () -> {
             Location pos = position.apply(player);
             this.openedAt = pos;
             this.original = pos.getBlock().getBlockData();
             player.sendBlockChange(pos, SIGN_BLOCK);
             player.sendSignChange(pos, lines);
-            SESSIONS.put(player, this);
+            owner.sessions().sign.put(player, this);
             player.openVirtualSign(pos, SIDE);
 
             if (timeoutTicks > 0) {
                 TaskHandle[] handle = new TaskHandle[1];
-                handle[0] = FoliaGUI.scheduler().runForEntityTimer(player, () -> {
+                handle[0] = owner.scheduler().runForEntityTimer(player, () -> {
                     handle[0].cancel();
-                    if (SESSIONS.remove(player) == this) {
+                    if (owner.sessions().sign.remove(player) == this) {
                         revert(player);
                     }
                 }, null, timeoutTicks, timeoutTicks);
@@ -80,9 +97,9 @@ public final class SignGui {
     }
 
     @ApiStatus.Internal
-    public static boolean handleSignChange(@NotNull UncheckedSignChangeEvent event) {
+    public static boolean handleSignChange(@NotNull FoliaGUIService service, @NotNull UncheckedSignChangeEvent event) {
         Player player = event.getPlayer();
-        SignGui gui = SESSIONS.remove(player);
+        SignGui gui = service.sessions().sign.remove(player);
         if (gui == null) {
             return false;
         }
@@ -105,20 +122,21 @@ public final class SignGui {
     }
 
     @ApiStatus.Internal
-    public static void handleQuit(@NotNull Player player) {
-        SignGui gui = SESSIONS.remove(player);
+    public static void handleQuit(@NotNull FoliaGUIService service, @NotNull Player player) {
+        SignGui gui = service.sessions().sign.remove(player);
         if (gui != null && gui.timeoutTask != null) {
             gui.timeoutTask.cancel();
         }
     }
 
     public static void clearSessions() {
-        for (SignGui gui : SESSIONS.values()) {
-            if (gui.timeoutTask != null) {
-                gui.timeoutTask.cancel();
+        if (FoliaGUI.isInitialised()) {
+            GuiSessions sessions = FoliaGUI.service().sessions();
+            for (SignGui gui : sessions.sign.values()) {
+                gui.cancelTimeout();
             }
+            sessions.sign.clear();
         }
-        SESSIONS.clear();
     }
 
     private void revert(@NotNull Player player) {
@@ -128,6 +146,13 @@ public final class SignGui {
     }
 
     public static final class Builder {
+        private FoliaGUIService service;
+
+        public @NotNull Builder service(@NotNull FoliaGUIService service) {
+            this.service = service;
+            return this;
+        }
+
         private List<Component> lines = defaultLines();
         private Function<Player, Location> position = player -> {
             Location below = player.getLocation().add(0, -3, 0);

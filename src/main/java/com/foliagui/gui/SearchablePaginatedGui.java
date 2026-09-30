@@ -65,7 +65,7 @@ public class SearchablePaginatedGui extends PaginatedGui {
     }
 
     public void promptSearch(@NotNull Player player) {
-        ChatPrompt.ask(player, "&eType a search term (or 'clear'):", 0, term -> {
+        ChatPrompt.ask(service(), player, "&eType a search term (or 'clear'):", 0, term -> {
             if (term == null) {
                 return;
             }

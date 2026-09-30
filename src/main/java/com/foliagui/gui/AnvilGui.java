@@ -1,6 +1,7 @@
 package com.foliagui.gui;
 
 import com.foliagui.FoliaGUI;
+import com.foliagui.FoliaGUIService;
 import com.foliagui.util.Text;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -28,8 +29,7 @@ public final class AnvilGui {
 
     private static final int RESULT_SLOT = 2;
 
-    private static final SessionRegistry<AnvilGui> SESSIONS = new SessionRegistry<>();
-
+    private final FoliaGUIService service;
     private final Component title;
     private final ItemStack leftItem;
     private final ItemStack rightItem;
@@ -39,6 +39,7 @@ public final class AnvilGui {
     private final Set<UUID> allowedCloses = ConcurrentHashMap.newKeySet();
 
     private AnvilGui(Builder builder) {
+        this.service = builder.service;
         this.title = builder.title;
         this.leftItem = builder.leftItem;
         this.rightItem = builder.rightItem;
@@ -52,11 +53,20 @@ public final class AnvilGui {
     }
 
     public static boolean hasSession(@NotNull HumanEntity player) {
-        return SESSIONS.has(player);
+        return FoliaGUI.isInitialised() && hasSession(FoliaGUI.service(), player);
+    }
+
+    public static boolean hasSession(@NotNull FoliaGUIService service, @NotNull HumanEntity player) {
+        return service.sessions().anvil.has(player);
+    }
+
+    private @NotNull FoliaGUIService service() {
+        return service != null ? service : FoliaGUI.service();
     }
 
     public void open(@NotNull Player player) {
-        FoliaGUI.scheduler().runForEntity(player, () -> {
+        FoliaGUIService owner = service();
+        owner.scheduler().runForEntity(player, () -> {
             AnvilView view = MenuType.ANVIL.create(player, title);
             view.setRepairCost(0);
             view.setMaximumRepairCost(Integer.MAX_VALUE);
@@ -65,14 +75,14 @@ public final class AnvilGui {
             if (rightItem != null) {
                 top.setItem(1, rightItem);
             }
-            SESSIONS.put(player, this);
+            owner.sessions().anvil.put(player, this);
             player.openInventory(view);
         }, null);
     }
 
     @ApiStatus.Internal
-    public static boolean handleClick(@NotNull InventoryClickEvent event) {
-        AnvilGui gui = SESSIONS.get(event.getWhoClicked());
+    public static boolean handleClick(@NotNull FoliaGUIService service, @NotNull InventoryClickEvent event) {
+        AnvilGui gui = service.sessions().anvil.get(event.getWhoClicked());
         if (gui == null || !(event.getView() instanceof AnvilView view)) {
             return false;
         }
@@ -89,8 +99,8 @@ public final class AnvilGui {
     }
 
     @ApiStatus.Internal
-    public static boolean handleDrag(@NotNull InventoryDragEvent event) {
-        AnvilGui gui = SESSIONS.get(event.getWhoClicked());
+    public static boolean handleDrag(@NotNull FoliaGUIService service, @NotNull InventoryDragEvent event) {
+        AnvilGui gui = service.sessions().anvil.get(event.getWhoClicked());
         if (gui == null) {
             return false;
         }
@@ -99,13 +109,15 @@ public final class AnvilGui {
     }
 
     public static void clearSessions() {
-        SESSIONS.clear();
+        if (FoliaGUI.isInitialised()) {
+            FoliaGUI.service().sessions().anvil.clear();
+        }
     }
 
     @ApiStatus.Internal
-    public static boolean handleClose(@NotNull InventoryCloseEvent event) {
+    public static boolean handleClose(@NotNull FoliaGUIService service, @NotNull InventoryCloseEvent event) {
         HumanEntity player = event.getPlayer();
-        AnvilGui gui = SESSIONS.remove(player);
+        AnvilGui gui = service.sessions().anvil.remove(player);
         if (gui == null) {
             return false;
         }
@@ -114,7 +126,7 @@ public final class AnvilGui {
             gui.onClose.accept((Player) player);
         }
         if (gui.forceOpen && !allowed) {
-            FoliaGUI.scheduler().runForEntity(player, () -> gui.open((Player) player), null);
+            service.scheduler().runForEntity(player, () -> gui.open((Player) player), null);
         }
         return true;
     }
@@ -122,7 +134,7 @@ public final class AnvilGui {
     private void apply(@NotNull Player player, @NotNull AnvilView view, @NotNull Response response) {
         if (response.close) {
             allowedCloses.add(player.getUniqueId());
-            FoliaGUI.scheduler().runForEntity(player, player::closeInventory, null);
+            service().scheduler().runForEntity(player, player::closeInventory, null);
         } else if (response.newText != null) {
             ItemStack left = view.getTopInventory().getItem(0);
             if (left != null) {
@@ -159,6 +171,13 @@ public final class AnvilGui {
     }
 
     public static final class Builder {
+        private FoliaGUIService service;
+
+        public @NotNull Builder service(@NotNull FoliaGUIService service) {
+            this.service = service;
+            return this;
+        }
+
         private Component title = Component.empty();
         private ItemStack leftItem = defaultInput("");
         private ItemStack rightItem;

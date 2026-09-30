@@ -1,6 +1,7 @@
 package com.foliagui.gui;
 
 import com.foliagui.FoliaGUI;
+import com.foliagui.FoliaGUIService;
 import com.foliagui.scheduler.TaskHandle;
 import com.foliagui.util.Text;
 import io.papermc.paper.event.player.AsyncChatEvent;
@@ -19,30 +20,39 @@ import java.util.function.Consumer;
 
 public final class ChatPrompt {
 
-    private static final SessionRegistry<ChatPrompt> PENDING = new SessionRegistry<>();
-    private static volatile Listener registeredHandler;
-
+    private final FoliaGUIService service;
     private final Consumer<String> callback;
     private volatile TaskHandle timeoutTask;
 
-    private ChatPrompt(@NotNull Consumer<String> callback) {
+    private ChatPrompt(@NotNull FoliaGUIService service, @NotNull Consumer<String> callback) {
+        this.service = service;
         this.callback = callback;
     }
 
     public static boolean hasSession(@NotNull HumanEntity player) {
-        return PENDING.has(player);
+        return FoliaGUI.isInitialised() && FoliaGUI.service().sessions().chat.has(player);
+    }
+
+    public static boolean hasSession(@NotNull FoliaGUIService service, @NotNull HumanEntity player) {
+        return service.sessions().chat.has(player);
     }
 
     public static void ask(@NotNull Player player, @NotNull String prompt, long timeoutTicks,
                             @NotNull Consumer<String> callback) {
-        ensureRegistered();
-        BaseGui open = GuiManager.getOpenGui(player);
+        ask(FoliaGUI.service(), player, prompt, timeoutTicks, callback);
+    }
+
+    public static void ask(@NotNull FoliaGUIService service, @NotNull Player player, @NotNull String prompt,
+                            long timeoutTicks, @NotNull Consumer<String> callback) {
+        GuiSessions sessions = service.sessions();
+        ensureRegistered(service, sessions);
+        BaseGui open = service.guis().getOpenGui(player);
         if (open != null) {
             open.close(player);
         }
 
-        ChatPrompt session = new ChatPrompt(callback);
-        ChatPrompt replaced = PENDING.put(player, session);
+        ChatPrompt session = new ChatPrompt(service, callback);
+        ChatPrompt replaced = sessions.chat.put(player, session);
         if (replaced != null) {
             replaced.abandon(player);
         }
@@ -50,9 +60,9 @@ public final class ChatPrompt {
 
         if (timeoutTicks > 0) {
             TaskHandle[] handle = new TaskHandle[1];
-            handle[0] = FoliaGUI.scheduler().runForEntityTimer(player, () -> {
+            handle[0] = service.scheduler().runForEntityTimer(player, () -> {
                 handle[0].cancel();
-                if (PENDING.remove(player) == session) {
+                if (sessions.chat.remove(player) == session) {
                     callback.accept(null);
                 }
             }, null, timeoutTicks, timeoutTicks);
@@ -65,43 +75,64 @@ public final class ChatPrompt {
         if (pendingTimeout != null) {
             pendingTimeout.cancel();
         }
-        FoliaGUI.scheduler().runForEntity(player, () -> callback.accept(null), null);
+        service.scheduler().runForEntity(player, () -> callback.accept(null), null);
     }
 
     public static void cancel(@NotNull Player player) {
-        ChatPrompt session = PENDING.remove(player);
+        if (FoliaGUI.isInitialised()) {
+            cancel(FoliaGUI.service(), player);
+        }
+    }
+
+    public static void cancel(@NotNull FoliaGUIService service, @NotNull Player player) {
+        ChatPrompt session = service.sessions().chat.remove(player);
         if (session != null && session.timeoutTask != null) {
             session.timeoutTask.cancel();
         }
     }
 
     public static void clearAll() {
-        for (ChatPrompt session : PENDING.values()) {
+        if (FoliaGUI.isInitialised()) {
+            clear(FoliaGUI.service().sessions());
+        }
+    }
+
+    static void clear(GuiSessions sessions) {
+        for (ChatPrompt session : sessions.chat.values()) {
             if (session.timeoutTask != null) {
                 session.timeoutTask.cancel();
             }
         }
-        PENDING.clear();
-        if (registeredHandler != null) {
-            HandlerList.unregisterAll(registeredHandler);
-            registeredHandler = null;
+        sessions.chat.clear();
+        Listener handler = sessions.chatHandler;
+        if (handler != null) {
+            HandlerList.unregisterAll(handler);
+            sessions.chatHandler = null;
         }
     }
 
-    private static synchronized void ensureRegistered() {
-        if (registeredHandler == null) {
-            Handler handler = new Handler();
-            Bukkit.getPluginManager().registerEvents(handler, FoliaGUI.plugin());
-            registeredHandler = handler;
+    private static synchronized void ensureRegistered(FoliaGUIService service, GuiSessions sessions) {
+        if (sessions.chatHandler == null) {
+            Handler handler = new Handler(service, sessions);
+            Bukkit.getPluginManager().registerEvents(handler, service.plugin());
+            sessions.chatHandler = handler;
         }
     }
 
     private static final class Handler implements Listener {
 
+        private final FoliaGUIService service;
+        private final GuiSessions sessions;
+
+        private Handler(FoliaGUIService service, GuiSessions sessions) {
+            this.service = service;
+            this.sessions = sessions;
+        }
+
         @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
         public void onChat(@NotNull AsyncChatEvent event) {
             Player player = event.getPlayer();
-            ChatPrompt session = PENDING.remove(player);
+            ChatPrompt session = sessions.chat.remove(player);
             if (session == null) {
                 return;
             }
@@ -110,12 +141,12 @@ public final class ChatPrompt {
                 session.timeoutTask.cancel();
             }
             String text = PlainTextComponentSerializer.plainText().serialize(event.message());
-            FoliaGUI.scheduler().runForEntity(player, () -> session.callback.accept(text), null);
+            service.scheduler().runForEntity(player, () -> session.callback.accept(text), null);
         }
 
         @EventHandler
         public void onQuit(@NotNull PlayerQuitEvent event) {
-            cancel(event.getPlayer());
+            cancel(service, event.getPlayer());
         }
     }
 }

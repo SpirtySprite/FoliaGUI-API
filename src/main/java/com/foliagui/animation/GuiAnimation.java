@@ -1,6 +1,5 @@
 package com.foliagui.animation;
 
-import com.foliagui.FoliaGUI;
 import com.foliagui.gui.BaseGui;
 import com.foliagui.scheduler.TaskHandle;
 import org.bukkit.entity.Player;
@@ -16,7 +15,7 @@ public final class GuiAnimation {
     public static @NotNull TaskHandle play(@NotNull BaseGui gui, @NotNull Player player, long periodTicks,
                                            @NotNull Consumer<BaseGui> frame) {
         final TaskHandle[] handle = new TaskHandle[1];
-        handle[0] = FoliaGUI.scheduler().runForEntityTimer(player, () -> {
+        handle[0] = gui.service().scheduler().runForEntityTimer(player, () -> {
             if (!isViewing(player, gui)) {
                 if (handle[0] != null) {
                     handle[0].cancel();

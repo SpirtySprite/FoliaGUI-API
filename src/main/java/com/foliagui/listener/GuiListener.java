@@ -1,10 +1,8 @@
 package com.foliagui.listener;
 
-import com.foliagui.FoliaGUI;
+import com.foliagui.FoliaGUIService;
 import com.foliagui.gui.AnvilGui;
 import com.foliagui.gui.BaseGui;
-import com.foliagui.gui.GuiManager;
-import com.foliagui.gui.GuiNavigator;
 import com.foliagui.gui.InteractionModifier;
 import com.foliagui.gui.MerchantGui;
 import com.foliagui.gui.SignGui;
@@ -29,12 +27,21 @@ public final class GuiListener implements Listener {
 
     private static final Logger LOGGER = Logger.getLogger(GuiListener.class.getName());
 
+    private final FoliaGUIService service;
+
+    public GuiListener(FoliaGUIService service) {
+        this.service = service;
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
     public void onClick(InventoryClickEvent event) {
         if (!(event.getInventory().getHolder() instanceof BaseGui gui)) {
-            if (!AnvilGui.handleClick(event)) {
-                MerchantGui.handleClick(event);
+            if (!AnvilGui.handleClick(service, event)) {
+                MerchantGui.handleClick(service, event);
             }
+            return;
+        }
+        if (!gui.belongsTo(service)) {
             return;
         }
 
@@ -82,7 +89,10 @@ public final class GuiListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
     public void onDrag(InventoryDragEvent event) {
         if (!(event.getInventory().getHolder() instanceof BaseGui gui)) {
-            AnvilGui.handleDrag(event);
+            AnvilGui.handleDrag(service, event);
+            return;
+        }
+        if (!gui.belongsTo(service)) {
             return;
         }
         int topSize = gui.getInventory().getSize();
@@ -97,14 +107,15 @@ public final class GuiListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
     public void onOpen(InventoryOpenEvent event) {
-        if (!(event.getInventory().getHolder() instanceof BaseGui gui) || gui.isUpdating()) {
+        if (!(event.getInventory().getHolder() instanceof BaseGui gui) || !gui.belongsTo(service)
+                || gui.isUpdating()) {
             return;
         }
         if (event.getPlayer() instanceof Player player && !GuiEventBridge.fireOpen(player, gui)) {
             event.setCancelled(true);
             return;
         }
-        GuiManager.register(event.getPlayer(), gui);
+        service.guis().register(event.getPlayer(), gui);
         gui.startAutoUpdate(event.getPlayer());
         run(gui.getOpenAction(), event);
     }
@@ -112,36 +123,36 @@ public final class GuiListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
     public void onClose(InventoryCloseEvent event) {
         if (!(event.getInventory().getHolder() instanceof BaseGui gui)) {
-            if (!AnvilGui.handleClose(event)) {
-                MerchantGui.handleClose(event);
+            if (!AnvilGui.handleClose(service, event)) {
+                MerchantGui.handleClose(service, event);
             }
             return;
         }
-        if (gui.isUpdating()) {
+        if (!gui.belongsTo(service) || gui.isUpdating()) {
             return;
         }
         gui.stopAutoUpdate(event.getPlayer());
-        GuiManager.unregister(event.getPlayer());
+        service.guis().unregister(event.getPlayer());
         boolean allowedClose = gui.consumeAllowedClose(event.getPlayer().getUniqueId());
         run(gui.getCloseAction(), event);
         if (event.getPlayer() instanceof Player player) {
             GuiEventBridge.fireClose(player, gui);
             if (gui.isForceOpen() && !allowedClose) {
-                FoliaGUI.scheduler().runForEntity(player, () -> gui.open(player), null);
+                service.scheduler().runForEntity(player, () -> gui.open(player), null);
             }
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
     public void onSignChange(UncheckedSignChangeEvent event) {
-        SignGui.handleSignChange(event);
+        SignGui.handleSignChange(service, event);
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        GuiManager.unregister(event.getPlayer());
-        GuiNavigator.clear(event.getPlayer());
-        SignGui.handleQuit(event.getPlayer());
+        service.guis().unregister(event.getPlayer());
+        service.navigation().clear(event.getPlayer());
+        SignGui.handleQuit(service, event.getPlayer());
     }
 
     private static <T extends org.bukkit.event.Event> void run(GuiAction<T> action, T event) {

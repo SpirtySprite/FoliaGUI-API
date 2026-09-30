@@ -6,6 +6,21 @@ All notable changes to FoliaGUI are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Runtime state is no longer process-wide. A `FoliaGUIService` (create one with `FoliaGUI.create(plugin)`)
+  owns the open-GUI registry, navigation history, anvil/sign/merchant/chat sessions, theme and listener.
+  `FoliaGUI.init` still creates a default service and all existing static helpers keep working on it.
+- `BaseGui#service()`, `BaseGui#service(FoliaGUIService)` and `.service(...)` on the GUI builders bind a GUI
+  to an explicit service. `ChatPrompt.ask(service, player, ...)` and `hasSession(service, player)` were added.
+- `FoliaGUI.init` from a second plugin while a default service exists now logs a warning instead of
+  silently doing nothing.
+- The item identity tag uses the fixed key `foliagui:item` instead of a key namespaced by the owning plugin.
+- Internal `handleClick`/`handleClose`/`handleDrag`/`handleSignChange`/`handleQuit` methods on `AnvilGui`,
+  `MerchantGui` and `SignGui` now take the service as their first argument. They are `@ApiStatus.Internal`.
+
+### Removed
+- `GuiManager.register` and `GuiManager.unregister` (internal, now on `GuiRegistry`).
+
 ### Fixed
 - A `GuiClickEvent` listener could un-cancel a click on a protected slot. Protected slots now stay
   locked regardless of listeners.

@@ -160,7 +160,11 @@ public final class GuiTheme {
         GuiItem item = backBase.get();
         item.setAction(event -> {
             click(event.getWhoClicked());
-            GuiNavigator.back(event.getWhoClicked());
+            if (event.getInventory().getHolder() instanceof BaseGui current) {
+                current.service().navigation().back(event.getWhoClicked());
+            } else {
+                GuiNavigator.back(event.getWhoClicked());
+            }
         });
         return item;
     }
@@ -178,7 +182,7 @@ public final class GuiTheme {
         GuiItem item = closeBase.get();
         item.setAction(event -> {
             click(event.getWhoClicked());
-            GuiNavigator.clear(event.getWhoClicked());
+            gui.service().navigation().clear(event.getWhoClicked());
             gui.close(event.getWhoClicked());
         });
         return item;

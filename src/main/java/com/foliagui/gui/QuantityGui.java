@@ -1,6 +1,6 @@
 package com.foliagui.gui;
 
-import com.foliagui.FoliaGUI;
+import com.foliagui.FoliaGUIService;
 import com.foliagui.builder.item.ItemBuilder;
 import com.foliagui.item.GuiItem;
 import com.foliagui.util.Text;
@@ -27,6 +27,8 @@ public final class QuantityGui {
     }
 
     public static final class Builder {
+        private FoliaGUIService service;
+
         private String title = "&8Choose an amount";
         private ItemStack display = new ItemStack(Material.CHEST);
         private int min = 1;
@@ -37,6 +39,11 @@ public final class QuantityGui {
         };
         private Runnable onCancel = () -> {
         };
+
+        public @NotNull Builder service(@NotNull FoliaGUIService service) {
+            this.service = service;
+            return this;
+        }
 
         public @NotNull Builder title(@NotNull String title) {
             this.title = title;
@@ -76,20 +83,23 @@ public final class QuantityGui {
 
         public @NotNull Gui build() {
             Gui gui = Gui.of(3, title);
+            if (service != null) {
+                gui.service(service);
+            }
             int[] amount = {clamp(initial)};
             AtomicBoolean decided = new AtomicBoolean();
-            GuiTheme theme = FoliaGUI.theme();
+            GuiTheme theme = gui.service().theme();
             gui.filler().fill(theme.filler());
             Runnable[] render = new Runnable[1];
             render[0] = () -> {
                 for (int index = 0; index < STEPS.length; index++) {
                     int step = STEPS[index];
-                    gui.updateItem(com.foliagui.util.Slot.of(2, STEP_COLUMNS[index]), stepButton(step, amount, render[0]));
+                    gui.updateItem(com.foliagui.util.Slot.of(2, STEP_COLUMNS[index]), stepButton(step, amount, render[0], theme));
                 }
                 gui.updateItem(com.foliagui.util.Slot.of(2, 5), preview(amount[0]));
             };
             for (int index = 0; index < STEPS.length; index++) {
-                gui.setItem(2, STEP_COLUMNS[index], stepButton(STEPS[index], amount, render[0]));
+                gui.setItem(2, STEP_COLUMNS[index], stepButton(STEPS[index], amount, render[0], theme));
             }
             gui.setItem(2, 5, preview(amount[0]));
             gui.setItem(3, 4, ItemBuilder.of(Material.LIME_CONCRETE).name("&aConfirm").asGuiItem(event -> {
@@ -115,7 +125,7 @@ public final class QuantityGui {
             build().open(player);
         }
 
-        private GuiItem stepButton(int step, int[] amount, Runnable render) {
+        private GuiItem stepButton(int step, int[] amount, Runnable render, GuiTheme theme) {
             int next = clamp(amount[0] + step);
             boolean possible = next != amount[0];
             Material material = step < 0
@@ -125,11 +135,11 @@ public final class QuantityGui {
             return ItemBuilder.of(material, Math.min(64, Math.abs(step))).name(label).asGuiItem(event -> {
                 int target = clamp(amount[0] + step);
                 if (target == amount[0]) {
-                    FoliaGUI.theme().deny(event.getWhoClicked());
+                    theme.deny(event.getWhoClicked());
                     return;
                 }
                 amount[0] = target;
-                FoliaGUI.theme().click(event.getWhoClicked());
+                theme.click(event.getWhoClicked());
                 render.run();
             });
         }

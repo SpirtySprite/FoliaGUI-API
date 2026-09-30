@@ -1,6 +1,5 @@
 package com.foliagui.gui;
 
-import com.foliagui.FoliaGUI;
 import com.foliagui.builder.gui.PaginatedGuiBuilder;
 import com.foliagui.item.GuiItem;
 import com.foliagui.util.Text;
@@ -105,7 +104,7 @@ public class PaginatedGui extends BaseGui {
         pageControls(com.foliagui.util.Slot.of(row, 1), com.foliagui.util.Slot.of(row, 5),
                 com.foliagui.util.Slot.of(row, 9));
         if (fillRow && getRows() > 0) {
-            filler().fillRow(row, FoliaGUI.theme().filler());
+            filler().fillRow(row, service().theme().filler());
         }
         return this;
     }
@@ -117,7 +116,7 @@ public class PaginatedGui extends BaseGui {
         this.previousSlot = previousSlot;
         this.indicatorSlot = indicatorSlot;
         this.nextSlot = nextSlot;
-        GuiItem placeholder = FoliaGUI.theme().filler();
+        GuiItem placeholder = service().theme().filler();
         for (int slot : new int[]{previousSlot, indicatorSlot, nextSlot}) {
             if (slot >= 0) {
                 setItem(slot, placeholder);
@@ -154,7 +153,7 @@ public class PaginatedGui extends BaseGui {
             return;
         }
         renderedControlState = state;
-        GuiTheme theme = FoliaGUI.theme();
+        GuiTheme theme = service().theme();
         Map<Integer, GuiItem> items = getGuiItems();
         if (previousSlot >= 0) {
             items.put(previousSlot, hasPrevious() || !hideUnavailableControls ? theme.previousButton(this) : theme.filler());
@@ -227,7 +226,7 @@ public class PaginatedGui extends BaseGui {
     }
 
     public void promptJumpToPage(@NotNull Player player) {
-        ChatPrompt.ask(player, "&eType a page number (1-" + getPagesCount() + "):", 20 * 20, input -> {
+        ChatPrompt.ask(service(), player, "&eType a page number (1-" + getPagesCount() + "):", 20 * 20, input -> {
             if (input == null) {
                 return;
             }
