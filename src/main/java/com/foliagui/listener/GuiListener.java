@@ -49,11 +49,12 @@ public final class GuiListener implements Listener {
         if (clicked.equals(gui.getInventory())) {
             GuiItem item = gui.itemAt(event.getSlot());
             boolean protectedSlot = item != null && !item.isEditable();
-            if (InteractionGuard.cancelTop(gui, event.getAction(), protectedSlot)) {
+            boolean guarded = InteractionGuard.cancelTop(gui, event.getAction(), protectedSlot);
+            if (guarded) {
                 event.setCancelled(true);
             }
             if (event.getWhoClicked() instanceof Player clicker) {
-                event.setCancelled(GuiEventBridge.fireClick(clicker, gui, event, item));
+                event.setCancelled(GuiEventBridge.fireClick(clicker, gui, event, item) || guarded);
             }
             run(gui.getSlotAction(event.getSlot()), event);
             if (item != null) {

@@ -78,4 +78,24 @@ class ChatPromptTest {
         assertFalse(ChatPrompt.hasSession(player));
         assertNull(received.get());
     }
+
+    @Test
+    void askingAgainCompletesThePreviousPromptWithNullInsteadOfLeavingItHanging() {
+        AtomicReference<String> first = new AtomicReference<>("untouched");
+        AtomicReference<String> second = new AtomicReference<>();
+
+        ChatPrompt.ask(player, "&eFirst:", 0, first::set);
+        ChatPrompt.ask(player, "&eSecond:", 0, second::set);
+        server.getScheduler().performOneTick();
+
+        assertNull(first.get(), "the replaced prompt's callback must be completed with null");
+        assertTrue(ChatPrompt.hasSession(player));
+
+        player.chat("answer");
+        server.getScheduler().waitAsyncEventsFinished();
+        server.getScheduler().performOneTick();
+
+        assertTrue(second.get() != null && second.get().contains("answer"));
+        assertNull(first.get(), "the replaced prompt must not receive the later answer");
+    }
 }

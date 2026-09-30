@@ -198,6 +198,14 @@ public abstract class BaseGui implements InventoryHolder {
         if (player.isSleeping()) {
             return;
         }
+        FoliaGUI.scheduler().runForEntity(player, () -> {
+            warnIfSharedWithAnotherViewer(player);
+            populateInventory();
+            player.openInventory(inventory);
+        }, null);
+    }
+
+    private void warnIfSharedWithAnotherViewer(HumanEntity player) {
         for (HumanEntity viewer : inventory.getViewers()) {
             if (!viewer.getUniqueId().equals(player.getUniqueId())) {
                 LOGGER.warning(getClass().getSimpleName() + " is being opened for " + player.getName()
@@ -206,10 +214,6 @@ public abstract class BaseGui implements InventoryHolder {
                 break;
             }
         }
-        FoliaGUI.scheduler().runForEntity(player, () -> {
-            populateInventory();
-            player.openInventory(inventory);
-        }, null);
     }
 
     public void close(@NotNull HumanEntity player) {
