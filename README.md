@@ -66,7 +66,7 @@ Every operation that touches an inventory (open, close, update, title change, an
 	    <groupId>com.github.SpirtySprite</groupId>
 	    <artifactId>FoliaGUI-API</artifactId>
 	    <version>1.0.0</version>
-	</dependency
+	</dependency>
 ```
 
 **2. Mark your plugin Folia-ready** — required or it won't load on Folia:

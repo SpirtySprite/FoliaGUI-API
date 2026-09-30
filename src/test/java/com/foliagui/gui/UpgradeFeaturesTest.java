@@ -49,6 +49,20 @@ class UpgradeFeaturesTest {
         GuiNavigator.clear(player);
     }
 
+    private void awaitTicks(java.util.function.BooleanSupplier condition) {
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
+        while (!condition.getAsBoolean() && System.nanoTime() < deadline) {
+            server.getScheduler().performOneTick();
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+        server.getScheduler().performOneTick();
+    }
+
     private void openAndFlush(BaseGui gui) {
         gui.open(player);
         server.getScheduler().performOneTick();
@@ -158,11 +172,7 @@ class UpgradeFeaturesTest {
         AsyncContent.load(gui, player, () -> {
             throw new IllegalStateException("database offline");
         }, value -> { }, failure -> errors.incrementAndGet());
-        for (int tick = 0; tick < 5; tick++) {
-            server.getScheduler().performOneTick();
-        }
-        server.getScheduler().waitAsyncTasksFinished();
-        server.getScheduler().performOneTick();
+        awaitTicks(() -> errors.get() > 0);
         assertEquals(1, errors.get());
         GuiItem centre = gui.getGuiItem(AsyncContent.centre(gui));
         assertNotNull(centre);
@@ -173,9 +183,7 @@ class UpgradeFeaturesTest {
     void asyncPagesFillThePaginatedGui() {
         PaginatedGui gui = new PaginatedGui(3, Component.text("Async"), 0);
         AsyncContent.loadPages(gui, player, () -> List.of("a", "b", "c"), value -> new GuiItem(Material.PAPER));
-        server.getScheduler().waitAsyncTasksFinished();
-        server.getScheduler().performOneTick();
-        server.getScheduler().performOneTick();
+        awaitTicks(() -> gui.getPageItemsCount() == 3);
         assertEquals(3, gui.getPageItemsCount());
         assertEquals(Material.PAPER, gui.getInventory().getItem(0).getType());
     }
