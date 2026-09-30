@@ -13,8 +13,8 @@ final class SessionRegistry<T> {
 
     private final Map<UUID, T> sessions = new ConcurrentHashMap<>();
 
-    void put(@NotNull HumanEntity player, @NotNull T session) {
-        sessions.put(player.getUniqueId(), session);
+    @Nullable T put(@NotNull HumanEntity player, @NotNull T session) {
+        return sessions.put(player.getUniqueId(), session);
     }
 
     @Nullable T get(@NotNull HumanEntity player) {

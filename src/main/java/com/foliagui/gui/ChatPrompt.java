@@ -42,7 +42,10 @@ public final class ChatPrompt {
         }
 
         ChatPrompt session = new ChatPrompt(callback);
-        PENDING.put(player, session);
+        ChatPrompt replaced = PENDING.put(player, session);
+        if (replaced != null) {
+            replaced.abandon(player);
+        }
         player.sendMessage(Text.of(prompt));
 
         if (timeoutTicks > 0) {
@@ -55,6 +58,14 @@ public final class ChatPrompt {
             }, null, timeoutTicks, timeoutTicks);
             session.timeoutTask = handle[0];
         }
+    }
+
+    private void abandon(Player player) {
+        TaskHandle pendingTimeout = timeoutTask;
+        if (pendingTimeout != null) {
+            pendingTimeout.cancel();
+        }
+        FoliaGUI.scheduler().runForEntity(player, () -> callback.accept(null), null);
     }
 
     public static void cancel(@NotNull Player player) {
